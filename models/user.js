@@ -19,10 +19,6 @@ const userSchema = new Schema(
     defaultFamilyId: {
       type: Schema.Types.ObjectId,
     },
-    active: {
-      type: Boolean,
-      default: true,
-    },
     avatar: {
       type: String,
     },

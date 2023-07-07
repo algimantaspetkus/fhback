@@ -12,6 +12,10 @@ const familySchema = new Schema(
       type: String,
       required: [true, 'secret is required'],
     },
+    active: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

@@ -16,8 +16,8 @@ const userFamilySchema = new Schema(
     },
     role: {
       type: String,
-      enum: ['owner', 'member'],
-      default: 'member',
+      enum: ['owner', 'guest'],
+      default: 'owner',
     },
   },
   { timestamps: true }
