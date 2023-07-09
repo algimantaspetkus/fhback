@@ -15,7 +15,6 @@ const taskSchema = new Schema(
     },
     taskDescription: {
       type: String,
-      required: [true, 'taskDescription is required'],
     },
     assignedToUser: {
       type: Schema.Types.ObjectId,

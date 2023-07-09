@@ -58,7 +58,7 @@ const addNew = async (req, res, next, io) => {
   const schema = joi.object().keys({
     taskListId: joi.string().required(),
     taskTitle: joi.string().required().min(3).max(64),
-    taskDescription: joi.string().required().min(3).max(256),
+    taskDescription: joi.string().min(3).max(256),
     assignedToUser: joi.string().allow(null),
     dueBy: joi.date().allow(null),
     priority: joi.number().min(0).max(100).default(0),
