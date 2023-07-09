@@ -2,12 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const SocketIO = require('socket.io');
 const isAuth = require('./middleware/is-auth');
 const authRoutes = require('./routes/auth');
 const familyRoutes = require('./routes/family');
 const userRoutes = require('./routes/user');
-const task = require('./routes/tasks');
-const SocketIO = require('socket.io');
+const taskListRoutes = require('./routes/tasks');
+const taskRouter = require('./routes/task');
 
 require('dotenv').config();
 
@@ -32,15 +33,16 @@ const io = SocketIO(server, {
 });
 
 io.on('connection', (socket) => {
-  console.log('joined');
   if (socket.handshake.query?.room) {
     socket.join(socket.handshake.query.room);
   }
 
   const familyRouter = familyRoutes(io);
-  const taskRouter = task(io);
+  const taskListRouter = taskListRoutes(io);
+  const tasksRouter = taskRouter(io);
   app.use('/family', familyRouter);
-  app.use('/tasks', taskRouter);
+  app.use('/tasklist', taskListRouter);
+  app.use('/task', tasksRouter);
 
   socket.on('error', (err) => {
     console.log(err);
