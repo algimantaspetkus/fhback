@@ -191,6 +191,39 @@ const joinFamily = (req, res, next, io) => {
     });
 };
 
+const getListMembers = async (req, res) => {
+  const { listId } = req.params;
+  const { userId } = req;
+
+  try {
+    const list = await TaskList.findOne({ _id: listId });
+    if (!list) {
+      return res.status(400).json({ error: 'List does not exist' });
+    }
+
+    if (list.isPrivate && list.createdByUser === userId) {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      return res.status(200).json({ members: [user] });
+    } else if (!list.isPrivate) {
+      const userFamily = await UserFamily.find({ familyId: list.familyId });
+      if (!userFamily || userFamily.length === 0) {
+        return res.status(400).json({ error: 'You cannot access this list' });
+      }
+
+      const userIds = userFamily.map((family) => family.userId);
+      const familyMembers = await User.find({ _id: { $in: userIds } });
+      return res.status(200).json({ members: familyMembers });
+    }
+    return res.status(400).json({ error: 'You cannot access this list' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Something went wrong' });
+  }
+};
+
+
 module.exports = {
   addNew,
   getFamilies,
