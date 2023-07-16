@@ -1,4 +1,5 @@
 const express = require('express');
+
 const router = express.Router();
 const familyController = require('../controllers/family');
 
@@ -28,6 +29,7 @@ module.exports = (io) => {
   router.post('/disablefamily', disableFamily(io));
   router.post('/leavefamily', leaveFamily(io));
   router.post('/joinfamily', joinFamily(io));
+  router.get('/getListMembers/:listId', familyController.getListMembers);
   router.get('/getfamilysecret/:familyId', familyController.getFamilySecret);
   router.get('/getfamilies', familyController.getFamilies);
 

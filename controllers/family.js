@@ -1,6 +1,8 @@
 const joi = require('joi');
 const Family = require('../models/family');
 const UserFamily = require('../models/userfamily');
+const TaskList = require('../models/tasklist');
+const User = require('../models/user');
 require('dotenv').config();
 
 const generateRandomString = () => {
@@ -223,7 +225,6 @@ const getListMembers = async (req, res) => {
   }
 };
 
-
 module.exports = {
   addNew,
   getFamilies,
@@ -231,4 +232,5 @@ module.exports = {
   leaveFamily,
   getFamilySecret,
   joinFamily,
+  getListMembers,
 };

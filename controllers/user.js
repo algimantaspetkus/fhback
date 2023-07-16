@@ -1,6 +1,7 @@
 const joi = require('joi');
 const User = require('../models/user');
 const Family = require('../models/family');
+const TaskList = require('../models/tasklist');
 
 require('dotenv').config();
 
@@ -44,13 +45,8 @@ exports.updateDefaultFamily = (req, res, next) => {
               next(err);
             });
         } else {
-          res
-            .status(404)
-            .json({ error: 'User does not belong to this family' });
+          res.status(404).json({ error: 'User does not belong to this family' });
         }
-      })
-      .then((result) => {
-        res.status(200).json({ message: 'User updated' });
       })
       .catch((err) => {
         if (!err.statusCode) {

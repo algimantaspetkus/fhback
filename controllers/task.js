@@ -35,9 +35,8 @@ const getTasks = async (req, res, next, io) => {
       }
 
       Task.find({ taskListId })
-        .then((result) => {
-          return res.status(200).json({ taskList, tasks: result });
-        })
+        .sort({ priority: -1 })
+        .then((result) => res.status(200).json({ taskList, tasks: result }))
         .catch((err) => {
           console.error('Error:', err);
           res.status(500).json({ err: 'Internal server error' });
@@ -93,7 +92,7 @@ const addNew = async (req, res, next, io) => {
       task
         .save()
         .then(async (result) => {
-          io.emit('taskAdded');
+          io.to(taskListId.toString()).emit('taskItemAdded');
           return res.status(200).json({ task: result });
         })
         .catch((err) => {
