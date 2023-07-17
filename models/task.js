@@ -29,7 +29,7 @@ const taskSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    completionTime: {
+    completedAt: {
       type: Date,
     },
     dueBy: {
@@ -38,9 +38,6 @@ const taskSchema = new Schema(
     priority: {
       type: Number,
       default: 0,
-    },
-    tags: {
-      type: [String],
     },
   },
   { timestamps: true },
