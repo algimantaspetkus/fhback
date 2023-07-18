@@ -4,7 +4,7 @@ const Task = require('../models/task');
 const UserFamily = require('../models/userfamily');
 require('dotenv').config();
 
-const getTasks = async (req, res, next, io) => {
+const getTasks = async (req, res) => {
   const { userId } = req;
   const { taskListId } = req.params;
 
@@ -37,15 +37,13 @@ const getTasks = async (req, res, next, io) => {
       Task.find({ taskListId })
         .sort({ priority: -1 })
         .then((result) => res.status(200).json({ taskList, tasks: result }))
-        .catch((err) => {
-          console.error('Error:', err);
+        .catch(() => {
           res.status(500).json({ err: 'Internal server error' });
         });
     } catch (err) {
       return res.status(403).json({ err: 'User does not belong to this family' });
     }
   } catch (err) {
-    console.error('Error:', err);
     res.status(500).json({ err: 'Internal server error' });
   }
 };
@@ -61,7 +59,6 @@ const addNew = async (req, res, next, io) => {
     assignedToUser: joi.string().allow(null),
     dueBy: joi.date().allow(null),
     priority: joi.number().min(0).max(100).default(0),
-    tags: joi.array().items(joi.string()).allow(null),
   });
 
   const { error } = schema.validate(body);
@@ -95,17 +92,133 @@ const addNew = async (req, res, next, io) => {
           io.to(taskListId.toString()).emit('taskItemAdded');
           return res.status(200).json({ task: result });
         })
-        .catch((err) => {
-          console.error('Error:', err);
+        .catch(() => {
           res.status(500).json({ err: 'Internal server error' });
         });
     } catch (err) {
       return res.status(403).json({ err: 'User does not belong to this family' });
     }
   } catch (err) {
-    console.error('Error:', err);
     res.status(500).json({ err: 'Internal server error' });
   }
 };
 
-module.exports = { addNew, getTasks };
+const updateTask = async (req, res, next, io) => {
+  const { userId, body } = req;
+  const { taskId, data } = body;
+
+  const schema = joi.object().keys({
+    taskId: joi.string().required(),
+    data: joi.object().required(),
+  });
+
+  const schemaData = joi.object().keys({
+    taskTitle: joi.string().min(3).max(64),
+    taskDescription: joi.string().min(3).max(256),
+    assignedToUser: joi.string().allow(null),
+    dueBy: joi.date().allow(null),
+    priority: joi.number().min(0).max(100).default(0),
+    completed: joi.boolean(),
+  });
+
+  const { error: errorData } = schemaData.validate(data);
+
+  const { error } = schema.validate(body);
+
+  if (error || errorData) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    const taskList = await TaskList.findById(task.taskListId);
+    if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
+      return res.status(403).json({ error: 'Task list is private' });
+    }
+    const userFamily = await UserFamily.findOne({ userId, familyId: taskList.familyId });
+
+    if (!userFamily) {
+      return res.status(403).json({ error: 'User does not belong to this family' });
+    }
+    const updatedTask = {
+      ...task.toObject(),
+      ...data,
+    };
+
+    if (data.completed) {
+      updatedTask.completedAt = Date.now();
+    } else {
+      updatedTask.completedAt = undefined;
+    }
+
+    const result = await Task.findByIdAndUpdate(taskId, updatedTask, { new: true });
+    io.to(taskList._id.toString()).emit('taskItemAdded');
+    io.to(taskId.toString()).emit('taskItemUpdated');
+    return res.status(200).json({ task: result });
+  } catch (err) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const deleteTask = async (req, res, next, io) => {
+  const { userId } = req;
+  const { taskId } = req.params;
+
+  try {
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    const taskList = await TaskList.findById(task.taskListId);
+    if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
+      return res.status(403).json({ error: 'Task list is private' });
+    }
+    const userFamily = await UserFamily.findOne({ userId, familyId: taskList.familyId });
+
+    if (!userFamily) {
+      return res.status(403).json({ error: 'User does not belong to this family' });
+    }
+
+    const result = await Task.findOneAndDelete(taskId);
+    io.to(taskList._id.toString()).emit('taskItemAdded');
+    return res.status(200).json({ result });
+  } catch (err) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const getTask = async (req, res, next, io) => {
+  const { userId } = req;
+  const { taskId } = req.params;
+
+  try {
+    const task = await Task.findById(taskId)
+      .populate('taskListId', 'listTitle isPrivate') // Populate createdByUser field and select displayName
+      .populate('createdByUser', 'displayName avatar') // Populate createdByUser field and select displayName
+      .populate('assignedToUser', 'displayName avatar'); // Populate assignedToUser field and select displayName
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const taskList = await TaskList.findById(task.taskListId);
+    if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
+      return res.status(403).json({ error: 'Task list is private' });
+    }
+
+    const userFamily = await UserFamily.findOne({ userId, familyId: taskList.familyId });
+    if (!userFamily) {
+      return res.status(403).json({ error: 'User does not belong to this family' });
+    }
+
+    io.to(taskId.toString()).emit('taskItemUpdated');
+    return res.status(200).json({ task });
+  } catch (err) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { addNew, getTasks, updateTask, deleteTask, getTask };
