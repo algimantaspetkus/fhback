@@ -34,7 +34,7 @@ const getTasks = async (req, res) => {
         return res.status(404).json({ error: 'Task list not found' });
       }
 
-      Task.find({ taskListId })
+      Task.find({ taskListId, active: true })
         .sort({ priority: -1 })
         .then((result) => res.status(200).json({ taskList, tasks: result }))
         .catch(() => {
@@ -130,7 +130,7 @@ const updateTask = async (req, res, next, io) => {
   }
 
   try {
-    const task = await Task.findById(taskId);
+    const task = await Task.findOne({ _id: taskId, active: true });
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -168,7 +168,7 @@ const deleteTask = async (req, res, next, io) => {
   const { taskId } = req.params;
 
   try {
-    const task = await Task.findById(taskId);
+    const task = await Task.findOne({ _id: taskId, active: true });
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -182,7 +182,8 @@ const deleteTask = async (req, res, next, io) => {
       return res.status(403).json({ error: 'User does not belong to this family' });
     }
 
-    const result = await Task.findOneAndDelete(taskId);
+    const result = await Task.findOneAndUpdate({ _id: taskId }, { $set: { active: false } }, { new: true });
+
     io.to(taskList._id.toString()).emit('taskItemAdded');
     return res.status(200).json({ result });
   } catch (err) {
@@ -195,7 +196,7 @@ const getTask = async (req, res, next, io) => {
   const { taskId } = req.params;
 
   try {
-    const task = await Task.findById(taskId)
+    const task = await Task.findOne({ _id: taskId, active: true })
       .populate('taskListId', 'listTitle isPrivate') // Populate createdByUser field and select displayName
       .populate('createdByUser', 'displayName avatar') // Populate createdByUser field and select displayName
       .populate('assignedToUser', 'displayName avatar'); // Populate assignedToUser field and select displayName
