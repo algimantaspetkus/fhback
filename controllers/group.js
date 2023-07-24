@@ -1,6 +1,6 @@
 const joi = require('joi');
-const Family = require('../models/family');
-const UserFamily = require('../models/userfamily');
+const Group = require('../models/group');
+const UserGroup = require('../models/usergroup');
 const TaskList = require('../models/tasklist');
 const User = require('../models/user');
 require('dotenv').config();
@@ -16,18 +16,18 @@ const generateRandomString = () => {
   return result;
 };
 
-const getFamilies = (req, res, next) => {
+const getGroups = (req, res, next) => {
   const { userId } = req;
-  UserFamily.find({ userId })
+  UserGroup.find({ userId })
     .populate({
-      path: 'familyId',
+      path: 'groupId',
       select: 'name active',
       match: { active: true },
     })
     .sort({ createdAt: -1 })
     .then((result) => {
-      const filteredResult = result.filter((item) => item.familyId !== null);
-      res.status(200).json({ families: filteredResult });
+      const filteredResult = result.filter((item) => item.groupId !== null);
+      res.status(200).json({ groups: filteredResult });
     })
     .catch((err) => {
       res.status(400).json({ error: 'Something went wrong' });
@@ -35,16 +35,16 @@ const getFamilies = (req, res, next) => {
     });
 };
 
-const disableFamily = (req, res, next, io) => {
-  const { familyId } = req.body;
+const disableGroup = (req, res, next, io) => {
+  const { groupId } = req.body;
   const { userId } = req;
-  UserFamily.findOne({ familyId, userId })
+  UserGroup.findOne({ groupId, userId })
     .then((result) => {
       if (result.role === 'owner') {
-        Family.findOneAndUpdate({ _id: familyId }, { active: false }, { new: true })
+        Group.findOneAndUpdate({ _id: groupId }, { active: false }, { new: true })
           .then(() => {
-            io.to(userId).emit('updateFamily');
-            getFamilies(req, res, next);
+            io.to(userId).emit('updateGroup');
+            getGroups(req, res, next);
           })
           .catch((err) => {
             res.status(400).json({ error: 'Something went wrong' });
@@ -70,25 +70,25 @@ const addNew = (req, res, next, io) => {
   if (error) {
     res.status(400).json({ error: error.details[0].message });
   } else {
-    const family = new Family({
+    const group = new Group({
       name: body.name,
       secret: generateRandomString(),
     });
-    family
+    group
       .save()
       .then((result) => {
         const { _id } = result;
         const { userId } = req;
-        const userFamily = new UserFamily({
+        const userGroup = new UserGroup({
           userId,
-          familyId: _id,
+          groupId: _id,
           role: 'owner',
         });
-        userFamily
+        userGroup
           .save()
-          .then(() => {
-            io.to(userId).emit('updateFamily');
-            getFamilies(req, res, next);
+          .then((resp) => {
+            io.to(userId).emit('updateGroup');
+            res.status(200).json({ groupId: resp.groupId });
           })
           .catch((err) => {
             res.status(400).json({ error: 'Something went wrong' });
@@ -102,16 +102,16 @@ const addNew = (req, res, next, io) => {
   }
 };
 
-const leaveFamily = (req, res, next, io) => {
-  const { familyId } = req.body;
+const leaveGroup = (req, res, next, io) => {
+  const { groupId } = req.body;
   const { userId } = req;
-  UserFamily.findOne({ familyId, userId })
+  UserGroup.findOne({ groupId, userId })
     .then((result) => {
       if (result.role !== 'owner') {
-        UserFamily.findOneAndDelete({ familyId, userId })
+        UserGroup.findOneAndDelete({ groupId, userId })
           .then(() => {
-            io.to(userId).emit('updateFamily');
-            getFamilies(req, res, next);
+            io.to(userId).emit('updateGroup');
+            getGroups(req, res, next);
           })
           .catch((err) => {
             res.status(400).json({ error: 'Something went wrong' });
@@ -127,13 +127,13 @@ const leaveFamily = (req, res, next, io) => {
     });
 };
 
-const getFamilySecret = (req, res, next) => {
-  const { familyId } = req.params;
+const getGroupSecret = (req, res, next) => {
+  const { groupId } = req.params;
   const { userId } = req;
-  UserFamily.findOne({ familyId, userId })
+  UserGroup.findOne({ groupId, userId })
     .then((result) => {
       if (result.role === 'owner') {
-        Family.findOne({ _id: familyId })
+        Group.findOne({ _id: groupId })
           .then(({ secret }) => {
             res.status(200).json({ secret });
           })
@@ -151,32 +151,32 @@ const getFamilySecret = (req, res, next) => {
     });
 };
 
-const joinFamily = (req, res, next, io) => {
+const joinGroup = (req, res, next, io) => {
   const { secret } = req.body;
   const { userId } = req;
-  Family.findOne({ secret })
-    .then(({ active, familyId, _id }) => {
+  Group.findOne({ secret })
+    .then(({ active, groupId, _id }) => {
       if (active) {
-        UserFamily.findOne({ userId, familyId })
+        UserGroup.findOne({ userId, groupId })
           .then((belongs) => {
             if (belongs === null) {
-              const userFamily = new UserFamily({
+              const userGroup = new UserGroup({
                 userId,
-                familyId: _id,
+                groupId: _id,
                 role: 'guest',
               });
-              userFamily
+              userGroup
                 .save()
                 .then(() => {
-                  io.to(userId).emit('updateFamily');
-                  getFamilies(req, res, next);
+                  io.to(userId).emit('updateGroup');
+                  getGroups(req, res, next);
                 })
                 .catch((err) => {
                   res.status(400).json({ error: 'Something went wrong' });
                   next(err);
                 });
             } else {
-              res.status(400).json({ error: 'You already belong to a family' });
+              res.status(400).json({ error: 'You already belong to a group' });
             }
           })
           .catch((err) => {
@@ -184,7 +184,7 @@ const joinFamily = (req, res, next, io) => {
             next(err);
           });
       } else {
-        res.status(400).json({ error: 'Family is not active' });
+        res.status(400).json({ error: 'Group is not active' });
       }
     })
     .catch((err) => {
@@ -210,14 +210,14 @@ const getListMembers = async (req, res) => {
       }
       return res.status(200).json({ members: [user] });
     } else if (!list.isPrivate) {
-      const userFamily = await UserFamily.find({ familyId: list.familyId });
-      if (!userFamily || userFamily.length === 0) {
+      const userGroup = await UserGroup.find({ groupId: list.groupId });
+      if (!userGroup || userGroup.length === 0) {
         return res.status(400).json({ error: 'You cannot access this list' });
       }
 
-      const userIds = userFamily.map((family) => family.userId);
-      const familyMembers = await User.find({ _id: { $in: userIds } });
-      return res.status(200).json({ members: familyMembers });
+      const userIds = userGroup.map((group) => group.userId);
+      const groupMembers = await User.find({ _id: { $in: userIds } });
+      return res.status(200).json({ members: groupMembers });
     }
     return res.status(400).json({ error: 'You cannot access this list' });
   } catch (error) {
@@ -227,10 +227,10 @@ const getListMembers = async (req, res) => {
 
 module.exports = {
   addNew,
-  getFamilies,
-  disableFamily,
-  leaveFamily,
-  getFamilySecret,
-  joinFamily,
+  getGroups,
+  disableGroup,
+  leaveGroup,
+  getGroupSecret,
+  joinGroup,
   getListMembers,
 };

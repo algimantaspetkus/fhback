@@ -5,24 +5,21 @@ const { JWT } = process.env;
 
 module.exports = (req, res, next) => {
   const { authorization } = req.headers;
+
   if (!authorization) {
-    const error = new Error('Not authenticated');
-    error.statusCode = 401;
-    throw error;
+    return res.status(401).json({ message: 'Not authenticated' });
   }
+
   const token = authorization.split(' ')[1];
-  let decodedToken;
+
   try {
-    decodedToken = jwt.verify(token, JWT);
+    const decodedToken = jwt.verify(token, JWT);
+    if (!decodedToken) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    req.userId = decodedToken.userId;
+    next();
   } catch (err) {
-    err.statusCode = 500;
-    throw err;
+    return res.status(500).json({ message: 'Token verification failed' });
   }
-  if (!decodedToken) {
-    const error = new Error('Not authenticated');
-    error.statusCode = 401;
-    throw error;
-  }
-  req.userId = decodedToken.userId;
-  next();
 };

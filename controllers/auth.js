@@ -62,16 +62,16 @@ exports.login = (req, res, next) => {
       const token = jwt.sign(
         {
           userId: loadedUser._id.toString(),
-          defaultFamilyId: loadedUser?.defaultFamilyId?.toString(),
+          defaultGroupId: loadedUser?.defaultGroupId?.toString(),
         },
-        JWT
+        JWT,
         // { expiresIn: '31d' }
       );
       res.status(200).json({
         token,
         userId: loadedUser._id.toString(),
         displayName: loadedUser.displayName,
-        defaultFamilyId: loadedUser?.defaultFamilyId?.toString(),
+        defaultGroupId: loadedUser?.defaultGroupId?.toString(),
         avatar: loadedUser.avatar,
       });
     })

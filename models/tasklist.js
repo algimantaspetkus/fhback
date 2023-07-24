@@ -4,10 +4,10 @@ const { Schema } = mongoose;
 
 const taskListSchema = new Schema(
   {
-    familyId: {
+    groupId: {
       type: Schema.Types.ObjectId,
-      ref: 'Family',
-      required: [true, 'familyId is required'],
+      ref: 'Group',
+      required: [true, 'groupId is required'],
     },
     createdByUser: {
       type: Schema.Types.ObjectId,
@@ -25,9 +25,6 @@ const taskListSchema = new Schema(
     active: {
       type: Boolean,
       default: true,
-    },
-    completedAt: {
-      type: Date,
     },
   },
   { timestamps: true },

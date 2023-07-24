@@ -1,13 +1,13 @@
 const joi = require('joi');
 const TaskList = require('../models/tasklist');
-const Family = require('../models/family');
+const Group = require('../models/group');
 const User = require('../models/user');
 require('dotenv').config();
 
 const getTaskList = async (req, res, next) => {
   try {
     const { userId } = req;
-    const { defaultFamilyId } = await User.findById(userId);
+    const { defaultGroupId } = await User.findById(userId);
     const schema = joi.object().keys({
       userId: joi.string().required(),
     });
@@ -18,14 +18,14 @@ const getTaskList = async (req, res, next) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    if (!defaultFamilyId) {
-      return res.status(400).json({ error: 'You must belong to a family to get the task list' });
+    if (!defaultGroupId) {
+      return res.status(400).json({ error: 'You must belong to a group to get the task list' });
     }
 
     const taskList = await TaskList.find({
       $or: [
-        { familyId: defaultFamilyId.toString(), isPrivate: false },
-        { familyId: defaultFamilyId.toString(), isPrivate: true, createdByUser: userId },
+        { groupId: defaultGroupId.toString(), isPrivate: false },
+        { groupId: defaultGroupId.toString(), isPrivate: true, createdByUser: userId },
       ],
     });
     res.status(200).json({ taskList });
@@ -38,7 +38,7 @@ const getTaskList = async (req, res, next) => {
 const addNew = async (req, res, next, io) => {
   const { body } = req;
   const { userId } = req;
-  const { defaultFamilyId } = await User.findById(userId);
+  const { defaultGroupId } = await User.findById(userId);
 
   const schema = joi.object().keys({
     listTitle: joi.string().required(),
@@ -49,14 +49,14 @@ const addNew = async (req, res, next, io) => {
 
   if (error) {
     res.status(400).json({ error: error.details[0].message });
-  } else if (!defaultFamilyId === null) {
-    res.status(400).json({ error: 'You must belong to a family to create a task list' });
+  } else if (!defaultGroupId === null) {
+    res.status(400).json({ error: 'You must belong to a group to create a task list' });
   } else {
-    Family.findById(defaultFamilyId)
-      .then((family) => {
-        if (family.active) {
+    Group.findById(defaultGroupId)
+      .then((group) => {
+        if (group.active) {
           const taskList = new TaskList({
-            familyId: defaultFamilyId,
+            groupId: defaultGroupId,
             createdByUser: userId,
             listTitle: body.listTitle,
             isPrivate: body.isPrivate,
@@ -64,7 +64,7 @@ const addNew = async (req, res, next, io) => {
           taskList
             .save()
             .then(() => {
-              io.to(defaultFamilyId.toString()).emit('updateTaskList');
+              io.to(defaultGroupId.toString()).emit('updateTaskList');
               getTaskList(req, res, next);
             })
             .catch((err) => {
@@ -72,7 +72,7 @@ const addNew = async (req, res, next, io) => {
               next(err);
             });
         } else {
-          res.status(400).json({ error: 'You are not a member of an active family' });
+          res.status(400).json({ error: 'You are not a member of an active group' });
         }
       })
       .catch((err) => {

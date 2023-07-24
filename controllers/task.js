@@ -1,7 +1,7 @@
 const joi = require('joi');
 const TaskList = require('../models/tasklist');
 const Task = require('../models/task');
-const UserFamily = require('../models/userfamily');
+const UserGroup = require('../models/usergroup');
 require('dotenv').config();
 
 const getTasks = async (req, res) => {
@@ -22,12 +22,11 @@ const getTasks = async (req, res) => {
     const taskList = await TaskList.findById(taskListId);
 
     try {
-      const family = await UserFamily.findOne({ userId, familyId: taskList.familyId });
-      if (!family) {
-        return res.status(403).json({ err: 'User does not belong to this family' });
+      const group = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+      if (!group) {
+        return res.status(403).json({ err: 'User does not belong to this group' });
       }
-
-      if (taskList.isPrivate && taskList.createdByUser !== userId.toString()) {
+      if (taskList.isPrivate && taskList.createdByUser.toString() !== userId.toString()) {
         return res.status(403).json({ error: 'Access denied' });
       }
       if (!taskList) {
@@ -41,7 +40,7 @@ const getTasks = async (req, res) => {
           res.status(500).json({ err: 'Internal server error' });
         });
     } catch (err) {
-      return res.status(403).json({ err: 'User does not belong to this family' });
+      return res.status(403).json({ err: 'User does not belong to this group' });
     }
   } catch (err) {
     res.status(500).json({ err: 'Internal server error' });
@@ -73,9 +72,9 @@ const addNew = async (req, res, next, io) => {
     const taskList = await TaskList.findById(taskListId);
 
     try {
-      const family = await UserFamily.findOne({ userId, familyId: taskList.familyId });
-      if (!family) {
-        return res.status(403).json({ err: 'User does not belong to this family' });
+      const group = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+      if (!group) {
+        return res.status(403).json({ err: 'User does not belong to this group' });
       }
 
       if (taskList.isPrivate && taskList.createdByUser !== userId.toString()) {
@@ -96,7 +95,7 @@ const addNew = async (req, res, next, io) => {
           res.status(500).json({ err: 'Internal server error' });
         });
     } catch (err) {
-      return res.status(403).json({ err: 'User does not belong to this family' });
+      return res.status(403).json({ err: 'User does not belong to this group' });
     }
   } catch (err) {
     res.status(500).json({ err: 'Internal server error' });
@@ -138,10 +137,10 @@ const updateTask = async (req, res, next, io) => {
     if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
-    const userFamily = await UserFamily.findOne({ userId, familyId: taskList.familyId });
+    const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
 
-    if (!userFamily) {
-      return res.status(403).json({ error: 'User does not belong to this family' });
+    if (!userGroup) {
+      return res.status(403).json({ error: 'User does not belong to this group' });
     }
     const updatedTask = {
       ...task.toObject(),
@@ -176,10 +175,10 @@ const deleteTask = async (req, res, next, io) => {
     if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
-    const userFamily = await UserFamily.findOne({ userId, familyId: taskList.familyId });
+    const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
 
-    if (!userFamily) {
-      return res.status(403).json({ error: 'User does not belong to this family' });
+    if (!userGroup) {
+      return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
     const result = await Task.findOneAndUpdate({ _id: taskId }, { $set: { active: false } }, { new: true });
@@ -210,9 +209,9 @@ const getTask = async (req, res, next, io) => {
       return res.status(403).json({ error: 'Task list is private' });
     }
 
-    const userFamily = await UserFamily.findOne({ userId, familyId: taskList.familyId });
-    if (!userFamily) {
-      return res.status(403).json({ error: 'User does not belong to this family' });
+    const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+    if (!userGroup) {
+      return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
     io.to(taskId.toString()).emit('taskItemUpdated');

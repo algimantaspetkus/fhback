@@ -16,14 +16,14 @@ const userSchema = new Schema(
       type: String,
       required: [true, 'password is required'],
     },
-    defaultFamilyId: {
+    defaultGroupId: {
       type: Schema.Types.ObjectId,
     },
     avatar: {
       type: String,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('User', userSchema);

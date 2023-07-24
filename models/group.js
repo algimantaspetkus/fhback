@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 
-const familySchema = new Schema(
+const groupSchema = new Schema(
   {
     name: {
       type: String,
@@ -17,7 +17,7 @@ const familySchema = new Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model('Family', familySchema);
+module.exports = mongoose.model('Group', groupSchema);

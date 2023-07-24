@@ -1,7 +1,7 @@
 {
-  "name": "familyhub",
+  "name": "grouphub",
   "version": "1.0.0",
-  "description": "Backend for the familyhub app",
+  "description": "Backend for the grouphub app",
   "main": "App.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

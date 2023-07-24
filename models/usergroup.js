@@ -2,17 +2,17 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 
-const userFamilySchema = new Schema(
+const userGroupSchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'userId is required'],
     },
-    familyId: {
+    groupId: {
       type: Schema.Types.ObjectId,
-      ref: 'Family',
-      required: [true, 'familyId is required'],
+      ref: 'Group',
+      required: [true, 'groupId is required'],
     },
     role: {
       type: String,
@@ -20,7 +20,7 @@ const userFamilySchema = new Schema(
       default: 'owner',
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model('UserFamily', userFamilySchema);
+module.exports = mongoose.model('UserGroup', userGroupSchema);
