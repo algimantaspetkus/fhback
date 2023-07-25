@@ -34,7 +34,7 @@ const io = SocketIO(server, {
 });
 
 io.on('connection', (socket) => {
-  if (socket.handshake.query?.room && socket.handshake.query?.room !== 'notset') {
+  if (socket.handshake.query?.room && socket.handshake.query.room !== 'notset') {
     socket.join(socket.handshake.query.room);
   }
 
