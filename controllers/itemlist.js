@@ -5,7 +5,7 @@ const Group = require('../models/group');
 const User = require('../models/user');
 require('dotenv').config();
 
-const getTaskList = async (req, res, next, io, type) => {
+const getItemList = async (req, res, next, io, type) => {
   const { userId } = req;
   const { defaultGroupId } = await User.findById(userId);
   const schema = joi.object().keys({
@@ -35,7 +35,7 @@ const getTaskList = async (req, res, next, io, type) => {
   }
 };
 
-const disableTaskList = async (req, res, next, io) => {
+const disableItemList = async (req, res, next, io) => {
   const { userId, body } = req;
   const { itemListId } = body;
   // check if itemListId is exists
@@ -101,7 +101,7 @@ const makePublic = async (req, res, next, io) => {
     .save()
     .then(() => {
       io.to(itemList.groupId.toString()).emit('updateTaskList');
-      getTaskList(req, res, next);
+      getItemList(req, res, next);
     })
     .catch((err) => {
       res.status(400).json({ error: 'Something went wrong' });
@@ -109,7 +109,7 @@ const makePublic = async (req, res, next, io) => {
     });
 };
 
-const addNew = async (req, res, next, io, type) => {
+const addItemList = async (req, res, next, io, type) => {
   const { body } = req;
   const { userId } = req;
   const { defaultGroupId } = await User.findById(userId);
@@ -140,7 +140,7 @@ const addNew = async (req, res, next, io, type) => {
             .save()
             .then(() => {
               io.to(defaultGroupId.toString()).emit('updateTaskList');
-              getTaskList(req, res, next);
+              getItemList(req, res, next);
             })
             .catch((err) => {
               res.status(400).json({ error: 'Something went wrong' });
@@ -157,4 +157,4 @@ const addNew = async (req, res, next, io, type) => {
   }
 };
 
-module.exports = { getTaskList, addNew, disableTaskList, makePublic };
+module.exports = { getItemList, addItemList, disableItemList, makePublic };

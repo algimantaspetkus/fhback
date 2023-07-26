@@ -4,7 +4,7 @@ const Task = require('../models/task');
 const UserGroup = require('../models/usergroup');
 require('dotenv').config();
 
-const getTasks = async (req, res) => {
+const getItems = async (req, res) => {
   const { userId } = req;
   const { itemListId } = req.params;
 
@@ -47,7 +47,7 @@ const getTasks = async (req, res) => {
   }
 };
 
-const addNew = async (req, res, next, io) => {
+const addItem = async (req, res, next, io) => {
   const { body } = req;
   const { userId } = req;
 
@@ -102,7 +102,7 @@ const addNew = async (req, res, next, io) => {
   }
 };
 
-const updateTask = async (req, res, next, io) => {
+const updateItem = async (req, res, next, io) => {
   const { userId, body } = req;
   const { taskId, data } = body;
 
@@ -162,7 +162,7 @@ const updateTask = async (req, res, next, io) => {
   }
 };
 
-const deleteTask = async (req, res, next, io) => {
+const deleteItem = async (req, res, next, io) => {
   const { userId } = req;
   const { taskId } = req.params;
 
@@ -190,7 +190,7 @@ const deleteTask = async (req, res, next, io) => {
   }
 };
 
-const getTask = async (req, res, next, io) => {
+const getItem = async (req, res, next, io) => {
   const { userId } = req;
   const { taskId } = req.params;
 
@@ -222,4 +222,4 @@ const getTask = async (req, res, next, io) => {
   }
 };
 
-module.exports = { addNew, getTasks, updateTask, deleteTask, getTask };
+module.exports = { addItem, getItem, updateItem, deleteItem, getItems };

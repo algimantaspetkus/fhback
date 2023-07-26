@@ -9,7 +9,7 @@ const groupRoutes = require('./routes/group');
 const userRoutes = require('./routes/user');
 const taskListRoutes = require('./routes/tasklist');
 const shoppingListRoutes = require('./routes/shoppinglist');
-const taskRoutes = require('./routes/task');
+const taskRoutes = require('./routes/taskitems');
 const shoppingItemRoutes = require('./routes/shoppingitems');
 
 require('dotenv').config();
