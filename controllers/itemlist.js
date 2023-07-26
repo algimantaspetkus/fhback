@@ -5,28 +5,28 @@ const Group = require('../models/group');
 const User = require('../models/user');
 require('dotenv').config();
 
-const getTaskList = async (req, res, next) => {
+const getTaskList = async (req, res, next, io, type) => {
+  console.log('this');
+  const { userId } = req;
+  const { defaultGroupId } = await User.findById(userId);
+  const schema = joi.object().keys({
+    userId: joi.string().required(),
+  });
+
+  const { error } = schema.validate({ userId });
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  if (!defaultGroupId) {
+    return res.status(400).json({ error: 'You must belong to a group to get the task list' });
+  }
   try {
-    const { userId } = req;
-    const { defaultGroupId } = await User.findById(userId);
-    const schema = joi.object().keys({
-      userId: joi.string().required(),
-    });
-
-    const { error } = schema.validate({ userId });
-
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    if (!defaultGroupId) {
-      return res.status(400).json({ error: 'You must belong to a group to get the task list' });
-    }
-
     const itemList = await ItemList.find({
       $or: [
-        { groupId: defaultGroupId.toString(), isPrivate: false, active: true, type: 'task' },
-        { groupId: defaultGroupId.toString(), isPrivate: true, createdByUser: userId, active: true, type: 'task' },
+        { groupId: defaultGroupId.toString(), isPrivate: false, active: true, type },
+        { groupId: defaultGroupId.toString(), isPrivate: true, createdByUser: userId, active: true, type },
       ],
     });
     res.status(200).json({ itemList });
@@ -110,7 +110,7 @@ const makePublic = async (req, res, next, io) => {
     });
 };
 
-const addNew = async (req, res, next, io) => {
+const addNew = async (req, res, next, io, type) => {
   const { body } = req;
   const { userId } = req;
   const { defaultGroupId } = await User.findById(userId);
@@ -135,7 +135,7 @@ const addNew = async (req, res, next, io) => {
             createdByUser: userId,
             listTitle: body.listTitle,
             isPrivate: body.isPrivate,
-            type: 'task',
+            type,
           });
           itemList
             .save()

@@ -3,12 +3,14 @@ const express = require('express');
 const router = express.Router();
 const itemListController = require('../controllers/itemList');
 
+const type = 'shopping';
+
 const addTaskList = (io) => (req, res, next) => {
-  itemListController.addNew(req, res, next, io);
+  itemListController.addNew(req, res, next, io, type);
 };
 
 const getTaskList = (io) => (req, res, next) => {
-  itemListController.getTaskList(req, res, next, io);
+  itemListController.getTaskList(req, res, next, io, type);
 };
 const makePublic = (io) => (req, res, next) => {
   itemListController.makePublic(req, res, next, io);
@@ -18,9 +20,9 @@ const disableTaskList = (io) => (req, res, next) => {
 };
 
 module.exports = (io) => {
-  router.post('/addtasklist', addTaskList(io));
+  router.post('/add', addTaskList(io));
   router.put('/makepublic', makePublic(io));
-  router.put('/disabletasklist', disableTaskList(io));
-  router.get('/gettasklists', getTaskList(io));
+  router.put('/disable', disableTaskList(io));
+  router.get('/list', getTaskList(io));
   return router;
 };

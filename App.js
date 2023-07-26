@@ -7,7 +7,8 @@ const isAuth = require('./middleware/is-auth');
 const authRoutes = require('./routes/auth');
 const groupRoutes = require('./routes/group');
 const userRoutes = require('./routes/user');
-const itemListRoutes = require('./routes/itemlist');
+const taskListRoutes = require('./routes/tasklist');
+const shoppingListRoutes = require('./routes/shoppinglist');
 const taskRouter = require('./routes/task');
 
 require('dotenv').config();
@@ -39,10 +40,12 @@ io.on('connection', (socket) => {
   }
 
   const groupRouter = groupRoutes(io);
-  const taskListRouter = itemListRoutes(io);
+  const taskListRouter = taskListRoutes(io);
   const tasksRouter = taskRouter(io);
+  const shoppingRouter = shoppingListRoutes(io);
   app.use('/group', isAuth, groupRouter);
   app.use('/tasklist', isAuth, taskListRouter);
+  app.use('/shoppinglist', isAuth, shoppingRouter);
   app.use('/task', isAuth, tasksRouter);
 
   socket.on('error', (err) => {
