@@ -1,5 +1,6 @@
 const multer = require('multer');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 const joi = require('joi');
 const User = require('../models/user');
 const Group = require('../models/group');
@@ -42,7 +43,7 @@ exports.updateAvatar = (req, res, next) => {
         if (err) {
           console.error('Error deleting the file:', err);
         } else {
-          console.log('File deleted successfully.');
+          console.log(`${filePath} deleted}`);
         }
       });
       user.avatar = `/avatars/${filename}`;
@@ -112,6 +113,68 @@ exports.updateDefaultGroup = (req, res, next) => {
         }
         next(err);
       });
+  }
+};
+
+exports.updateDisplayName = async (req, res, next) => {
+  const { userId, body } = req;
+  const { displayName: newDisplayName } = body;
+  const schema = joi.object({
+    displayName: joi.string().min(3).required(),
+  });
+  const { error } = schema.validate(body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    user.displayName = newDisplayName;
+    await user.save();
+    const { _id, email, defaultGroupId, displayName, avatar } = user;
+    res.status(200).json({
+      _id,
+      email,
+      displayName,
+      defaultGroupId,
+      avatar,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.changePassword = async (req, res, next) => {
+  const { userId, body } = req;
+  const { oldPassword, newPassword } = body;
+
+  const schema = joi.object({
+    oldPassword: joi.string().min(6).required(),
+    newPassword: joi.string().min(6).required(),
+  });
+
+  const { error } = schema.validate(body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const isEqual = await bcrypt.compare(oldPassword, user.password);
+    if (!isEqual) {
+      return res.status(401).json({ error: 'Incorrect password' });
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    user.password = hashedPassword;
+    await user.save();
+    res.status(200).json({ message: 'Password changed' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error' });
   }
 };
 

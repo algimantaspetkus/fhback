@@ -11,7 +11,7 @@ exports.signup = (req, res, next) => {
   const schema = joi.object({
     email: joi.string().email().required(),
     password: joi.string().min(6).required(),
-    displayName: joi.string().required(),
+    displayName: joi.string().min(3).required(),
   });
 
   const { error } = schema.validate(body);
