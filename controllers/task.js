@@ -1,5 +1,5 @@
 const joi = require('joi');
-const TaskList = require('../models/tasklist');
+const ItemList = require('../models/itemlist');
 const Task = require('../models/task');
 const UserGroup = require('../models/usergroup');
 require('dotenv').config();
@@ -19,23 +19,23 @@ const getTasks = async (req, res) => {
   }
 
   try {
-    const taskList = await TaskList.findById(taskListId);
+    const itemList = await ItemList.findById(taskListId);
 
     try {
-      const group = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+      const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
       if (!group) {
         return res.status(403).json({ err: 'User does not belong to this group' });
       }
-      if (taskList.isPrivate && taskList.createdByUser.toString() !== userId.toString()) {
+      if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString()) {
         return res.status(403).json({ error: 'Access denied' });
       }
-      if (!taskList) {
+      if (!itemList) {
         return res.status(404).json({ error: 'Task list not found' });
       }
 
       Task.find({ taskListId, active: true })
         .sort({ priority: -1 })
-        .then((result) => res.status(200).json({ taskList, tasks: result }))
+        .then((result) => res.status(200).json({ itemList, tasks: result }))
         .catch(() => {
           res.status(500).json({ err: 'Internal server error' });
         });
@@ -69,18 +69,18 @@ const addNew = async (req, res, next, io) => {
   const { taskListId } = body;
 
   try {
-    const taskList = await TaskList.findById(taskListId);
+    const itemList = await ItemList.findById(taskListId);
 
     try {
-      const group = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+      const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
       if (!group) {
         return res.status(403).json({ err: 'User does not belong to this group' });
       }
 
-      if (taskList.isPrivate && taskList.createdByUser !== userId.toString()) {
+      if (itemList.isPrivate && itemList.createdByUser !== userId.toString()) {
         return res.status(403).json({ error: 'Access denied' });
       }
-      if (!taskList) {
+      if (!itemList) {
         return res.status(404).json({ error: 'Task list not found' });
       }
 
@@ -133,11 +133,11 @@ const updateTask = async (req, res, next, io) => {
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
-    const taskList = await TaskList.findById(task.taskListId);
-    if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
+    const itemList = await ItemList.findById(task.taskListId);
+    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
-    const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+    const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
 
     if (!userGroup) {
       return res.status(403).json({ error: 'User does not belong to this group' });
@@ -154,7 +154,7 @@ const updateTask = async (req, res, next, io) => {
     }
 
     const result = await Task.findByIdAndUpdate(taskId, updatedTask, { new: true });
-    io.to(taskList._id.toString()).emit('taskItemAdded');
+    io.to(itemList._id.toString()).emit('taskItemAdded');
     io.to(taskId.toString()).emit('taskItemUpdated');
     return res.status(200).json({ task: result });
   } catch (err) {
@@ -171,11 +171,11 @@ const deleteTask = async (req, res, next, io) => {
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
-    const taskList = await TaskList.findById(task.taskListId);
-    if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
+    const itemList = await ItemList.findById(task.taskListId);
+    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
-    const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+    const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
 
     if (!userGroup) {
       return res.status(403).json({ error: 'User does not belong to this group' });
@@ -183,7 +183,7 @@ const deleteTask = async (req, res, next, io) => {
 
     const result = await Task.findOneAndUpdate({ _id: taskId }, { $set: { active: false } }, { new: true });
 
-    io.to(taskList._id.toString()).emit('taskItemAdded');
+    io.to(itemList._id.toString()).emit('taskItemAdded');
     return res.status(200).json({ result });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -204,12 +204,12 @@ const getTask = async (req, res, next, io) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const taskList = await TaskList.findById(task.taskListId);
-    if (taskList.isPrivate && taskList.createdByUser.toString() !== userId) {
+    const itemList = await ItemList.findById(task.taskListId);
+    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
 
-    const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+    const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
     if (!userGroup) {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }

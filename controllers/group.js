@@ -1,7 +1,7 @@
 const joi = require('joi');
 const Group = require('../models/group');
 const UserGroup = require('../models/usergroup');
-const TaskList = require('../models/tasklist');
+const ItemList = require('../models/itemlist');
 const User = require('../models/user');
 require('dotenv').config();
 
@@ -198,7 +198,7 @@ const getListMembers = async (req, res) => {
   const { userId } = req;
 
   try {
-    const list = await TaskList.findOne({ _id: listId });
+    const list = await ItemList.findOne({ _id: listId });
     if (!list) {
       return res.status(400).json({ error: 'List does not exist' });
     }

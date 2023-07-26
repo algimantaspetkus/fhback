@@ -1,5 +1,5 @@
 const joi = require('joi');
-const TaskList = require('../models/tasklist');
+const ItemList = require('../models/itemlist');
 const UserGroup = require('../models/usergroup');
 const Group = require('../models/group');
 const User = require('../models/user');
@@ -23,13 +23,13 @@ const getTaskList = async (req, res, next) => {
       return res.status(400).json({ error: 'You must belong to a group to get the task list' });
     }
 
-    const taskList = await TaskList.find({
+    const itemList = await ItemList.find({
       $or: [
-        { groupId: defaultGroupId.toString(), isPrivate: false, active: true },
-        { groupId: defaultGroupId.toString(), isPrivate: true, createdByUser: userId, active: true },
+        { groupId: defaultGroupId.toString(), isPrivate: false, active: true, type: 'task' },
+        { groupId: defaultGroupId.toString(), isPrivate: true, createdByUser: userId, active: true, type: 'task' },
       ],
     });
-    res.status(200).json({ taskList });
+    res.status(200).json({ itemList });
   } catch (err) {
     res.status(400).json({ error: 'Something went wrong' });
     next(err);
@@ -48,23 +48,23 @@ const disableTaskList = async (req, res, next, io) => {
     return res.status(400).json({ error: error.details[0].message });
   }
   // check if tasklist exists
-  const taskList = await TaskList.findById(taskListId);
-  if (!taskList) {
+  const itemList = await ItemList.findById(taskListId);
+  if (!itemList) {
     return res.status(400).json({ error: 'Task list does not exist' });
   }
   // check if user belongs to group
-  const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+  const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
   if (!userGroup) {
     return res.status(400).json({ error: 'User does not belong to this group' });
   }
-  if (taskList.isPrivate && taskList.createdByUser.toString() !== userId.toString() && !userGroup.role !== 'owner') {
+  if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString() && !userGroup.role !== 'owner') {
     return res.status(403).json({ error: 'Access denied' });
   }
-  taskList.active = false;
-  taskList
+  itemList.active = false;
+  itemList
     .save()
     .then(() => {
-      io.to(taskList.groupId.toString()).emit('updateTaskList');
+      io.to(itemList.groupId.toString()).emit('updateTaskList');
       getTaskList(req, res, next);
     })
     .catch((err) => {
@@ -85,23 +85,23 @@ const makePublic = async (req, res, next, io) => {
     return res.status(400).json({ error: error.details[0].message });
   }
   // check if tasklist exists
-  const taskList = await TaskList.findById(taskListId);
-  if (!taskList) {
+  const itemList = await ItemList.findById(taskListId);
+  if (!itemList) {
     return res.status(400).json({ error: 'Task list does not exist' });
   }
   // check if user belongs to group
-  const userGroup = await UserGroup.findOne({ userId, groupId: taskList.groupId });
+  const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
   if (!userGroup) {
     return res.status(400).json({ error: 'User does not belong to this group' });
   }
-  if (taskList.isPrivate && taskList.createdByUser.toString() !== userId.toString() && !userGroup.role !== 'owner') {
+  if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString() && !userGroup.role !== 'owner') {
     return res.status(403).json({ error: 'Access denied' });
   }
-  taskList.isPrivate = false;
-  taskList
+  itemList.isPrivate = false;
+  itemList
     .save()
     .then(() => {
-      io.to(taskList.groupId.toString()).emit('updateTaskList');
+      io.to(itemList.groupId.toString()).emit('updateTaskList');
       getTaskList(req, res, next);
     })
     .catch((err) => {
@@ -130,13 +130,14 @@ const addNew = async (req, res, next, io) => {
     Group.findById(defaultGroupId)
       .then((group) => {
         if (group.active) {
-          const taskList = new TaskList({
+          const itemList = new ItemList({
             groupId: defaultGroupId,
             createdByUser: userId,
             listTitle: body.listTitle,
             isPrivate: body.isPrivate,
+            type: 'task',
           });
-          taskList
+          itemList
             .save()
             .then(() => {
               io.to(defaultGroupId.toString()).emit('updateTaskList');

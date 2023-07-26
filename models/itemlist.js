@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const { Schema } = mongoose;
 
-const taskListSchema = new Schema(
+const itemListSchema = new Schema(
   {
     groupId: {
       type: Schema.Types.ObjectId,
@@ -22,6 +22,11 @@ const taskListSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    type: {
+      type: String,
+      enum: ['task', 'shopping', 'event'],
+      required: [true, 'type is required'],
+    },
     active: {
       type: Boolean,
       default: true,
@@ -30,4 +35,4 @@ const taskListSchema = new Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model('TaskList', taskListSchema);
+module.exports = mongoose.model('ItemList', itemListSchema);
