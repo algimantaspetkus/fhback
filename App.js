@@ -9,7 +9,8 @@ const groupRoutes = require('./routes/group');
 const userRoutes = require('./routes/user');
 const taskListRoutes = require('./routes/tasklist');
 const shoppingListRoutes = require('./routes/shoppinglist');
-const taskRouter = require('./routes/task');
+const taskRoutes = require('./routes/task');
+const shoppingItemRoutes = require('./routes/shoppingitems');
 
 require('dotenv').config();
 
@@ -41,12 +42,14 @@ io.on('connection', (socket) => {
 
   const groupRouter = groupRoutes(io);
   const taskListRouter = taskListRoutes(io);
-  const tasksRouter = taskRouter(io);
+  const tasksRouter = taskRoutes(io);
+  const shoppingItemRouter = shoppingItemRoutes(io);
   const shoppingRouter = shoppingListRoutes(io);
   app.use('/group', isAuth, groupRouter);
   app.use('/tasklist', isAuth, taskListRouter);
   app.use('/shoppinglist', isAuth, shoppingRouter);
   app.use('/task', isAuth, tasksRouter);
+  app.use('/shoppingitem', isAuth, shoppingItemRouter);
 
   socket.on('error', (err) => {
     console.log(err);

@@ -6,7 +6,6 @@ const User = require('../models/user');
 require('dotenv').config();
 
 const getTaskList = async (req, res, next, io, type) => {
-  console.log('this');
   const { userId } = req;
   const { defaultGroupId } = await User.findById(userId);
   const schema = joi.object().keys({
