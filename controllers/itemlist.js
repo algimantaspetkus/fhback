@@ -38,17 +38,17 @@ const getTaskList = async (req, res, next) => {
 
 const disableTaskList = async (req, res, next, io) => {
   const { userId, body } = req;
-  const { taskListId } = body;
-  // check if taskListId is exists
+  const { itemListId } = body;
+  // check if itemListId is exists
   const schema = joi.object().keys({
-    taskListId: joi.string().required(),
+    itemListId: joi.string().required(),
   });
-  const { error } = schema.validate({ taskListId });
+  const { error } = schema.validate({ itemListId });
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
   // check if tasklist exists
-  const itemList = await ItemList.findById(taskListId);
+  const itemList = await ItemList.findById(itemListId);
   if (!itemList) {
     return res.status(400).json({ error: 'Task list does not exist' });
   }
@@ -75,17 +75,17 @@ const disableTaskList = async (req, res, next, io) => {
 
 const makePublic = async (req, res, next, io) => {
   const { userId, body } = req;
-  const { taskListId } = body;
-  // check if taskListId is exists
+  const { itemListId } = body;
+  // check if itemListId is exists
   const schema = joi.object().keys({
-    taskListId: joi.string().required(),
+    itemListId: joi.string().required(),
   });
-  const { error } = schema.validate({ taskListId });
+  const { error } = schema.validate({ itemListId });
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
   // check if tasklist exists
-  const itemList = await ItemList.findById(taskListId);
+  const itemList = await ItemList.findById(itemListId);
   if (!itemList) {
     return res.status(400).json({ error: 'Task list does not exist' });
   }

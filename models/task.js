@@ -4,10 +4,10 @@ const { Schema } = mongoose;
 
 const taskSchema = new Schema(
   {
-    taskListId: {
+    itemListId: {
       type: Schema.Types.ObjectId,
-      ref: 'TaskList',
-      required: [true, 'taskListId is required'],
+      ref: 'ItemList',
+      required: [true, 'itemListId is required'],
     },
     taskTitle: {
       type: String,

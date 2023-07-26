@@ -6,20 +6,20 @@ require('dotenv').config();
 
 const getTasks = async (req, res) => {
   const { userId } = req;
-  const { taskListId } = req.params;
+  const { itemListId } = req.params;
 
   const schema = joi.object().keys({
-    taskListId: joi.string().required(),
+    itemListId: joi.string().required(),
   });
 
-  const { error } = schema.validate({ taskListId });
+  const { error } = schema.validate({ itemListId });
 
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
 
   try {
-    const itemList = await ItemList.findById(taskListId);
+    const itemList = await ItemList.findById(itemListId);
 
     try {
       const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
@@ -33,7 +33,7 @@ const getTasks = async (req, res) => {
         return res.status(404).json({ error: 'Task list not found' });
       }
 
-      Task.find({ taskListId, active: true })
+      Task.find({ itemListId, active: true })
         .sort({ priority: -1 })
         .then((result) => res.status(200).json({ itemList, tasks: result }))
         .catch(() => {
@@ -52,7 +52,7 @@ const addNew = async (req, res, next, io) => {
   const { userId } = req;
 
   const schema = joi.object().keys({
-    taskListId: joi.string().required(),
+    itemListId: joi.string().required(),
     taskTitle: joi.string().required().min(3).max(64),
     taskDescription: joi.string().min(3).max(256),
     assignedToUser: joi.string().allow(null),
@@ -66,10 +66,10 @@ const addNew = async (req, res, next, io) => {
     return res.status(400).json({ error: error.details[0].message });
   }
 
-  const { taskListId } = body;
+  const { itemListId } = body;
 
   try {
-    const itemList = await ItemList.findById(taskListId);
+    const itemList = await ItemList.findById(itemListId);
 
     try {
       const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
@@ -88,7 +88,7 @@ const addNew = async (req, res, next, io) => {
       task
         .save()
         .then(async (result) => {
-          io.to(taskListId.toString()).emit('taskItemAdded');
+          io.to(itemListId.toString()).emit('taskItemAdded');
           return res.status(200).json({ task: result });
         })
         .catch(() => {
@@ -133,7 +133,7 @@ const updateTask = async (req, res, next, io) => {
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
-    const itemList = await ItemList.findById(task.taskListId);
+    const itemList = await ItemList.findById(task.itemListId);
     if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
@@ -171,7 +171,7 @@ const deleteTask = async (req, res, next, io) => {
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
-    const itemList = await ItemList.findById(task.taskListId);
+    const itemList = await ItemList.findById(task.itemListId);
     if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
@@ -196,7 +196,7 @@ const getTask = async (req, res, next, io) => {
 
   try {
     const task = await Task.findOne({ _id: taskId, active: true })
-      .populate('taskListId', 'listTitle isPrivate') // Populate createdByUser field and select displayName
+      .populate('itemListId', 'listTitle isPrivate') // Populate createdByUser field and select displayName
       .populate('createdByUser', 'displayName avatar') // Populate createdByUser field and select displayName
       .populate('assignedToUser', 'displayName avatar'); // Populate assignedToUser field and select displayName
 
@@ -204,7 +204,7 @@ const getTask = async (req, res, next, io) => {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const itemList = await ItemList.findById(task.taskListId);
+    const itemList = await ItemList.findById(task.itemListId);
     if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
       return res.status(403).json({ error: 'Task list is private' });
     }
@@ -217,6 +217,7 @@ const getTask = async (req, res, next, io) => {
     io.to(taskId.toString()).emit('taskItemUpdated');
     return res.status(200).json({ task });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

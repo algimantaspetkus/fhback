@@ -23,7 +23,7 @@ const getTask = (io) => (req, res, next) => {
 module.exports = (io) => {
   router.post('/addtask', addTask(io));
   router.put('/update', updateTask(io));
-  router.get('/tasks/:taskListId', getTasks(io));
+  router.get('/tasks/:itemListId', getTasks(io));
   router.delete('/:taskId', deleteTask(io));
   router.get('/:taskId', getTask(io));
   return router;
