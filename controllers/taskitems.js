@@ -1,6 +1,6 @@
 const joi = require('joi');
 const ItemList = require('../models/itemlist');
-const Task = require('../models/task');
+const TaskItem = require('../models/taskitem');
 const UserGroup = require('../models/usergroup');
 require('dotenv').config();
 
@@ -30,10 +30,10 @@ const getItems = async (req, res) => {
         return res.status(403).json({ error: 'Access denied' });
       }
       if (!itemList) {
-        return res.status(404).json({ error: 'Task list not found' });
+        return res.status(404).json({ error: 'TaskItem list not found' });
       }
 
-      Task.find({ itemListId, active: true })
+      TaskItem.find({ itemListId, active: true })
         .sort({ priority: -1 })
         .then((result) => res.status(200).json({ itemList, tasks: result }))
         .catch(() => {
@@ -81,10 +81,10 @@ const addItem = async (req, res, next, io) => {
         return res.status(403).json({ error: 'Access denied' });
       }
       if (!itemList) {
-        return res.status(404).json({ error: 'Task list not found' });
+        return res.status(404).json({ error: 'TaskItem list not found' });
       }
 
-      const task = new Task({ ...body, createdByUser: userId });
+      const task = new TaskItem({ ...body, createdByUser: userId });
       task
         .save()
         .then(async (result) => {
@@ -129,13 +129,13 @@ const updateItem = async (req, res, next, io) => {
   }
 
   try {
-    const task = await Task.findOne({ _id: taskId, active: true });
+    const task = await TaskItem.findOne({ _id: taskId, active: true });
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'TaskItem not found' });
     }
     const itemList = await ItemList.findById(task.itemListId);
     if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
-      return res.status(403).json({ error: 'Task list is private' });
+      return res.status(403).json({ error: 'TaskItem list is private' });
     }
     const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
 
@@ -153,7 +153,7 @@ const updateItem = async (req, res, next, io) => {
       updatedTask.completedAt = undefined;
     }
 
-    const result = await Task.findByIdAndUpdate(taskId, updatedTask, { new: true });
+    const result = await TaskItem.findByIdAndUpdate(taskId, updatedTask, { new: true });
     io.to(itemList._id.toString()).emit('taskItemAdded');
     io.to(taskId.toString()).emit('taskItemUpdated');
     return res.status(200).json({ task: result });
@@ -167,13 +167,13 @@ const deleteItem = async (req, res, next, io) => {
   const { taskId } = req.params;
 
   try {
-    const task = await Task.findOne({ _id: taskId, active: true });
+    const task = await TaskItem.findOne({ _id: taskId, active: true });
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'TaskItem not found' });
     }
     const itemList = await ItemList.findById(task.itemListId);
     if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
-      return res.status(403).json({ error: 'Task list is private' });
+      return res.status(403).json({ error: 'TaskItem list is private' });
     }
     const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });
 
@@ -181,7 +181,7 @@ const deleteItem = async (req, res, next, io) => {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
-    const result = await Task.findOneAndUpdate({ _id: taskId }, { $set: { active: false } }, { new: true });
+    const result = await TaskItem.findOneAndUpdate({ _id: taskId }, { $set: { active: false } }, { new: true });
 
     io.to(itemList._id.toString()).emit('taskItemAdded');
     return res.status(200).json({ result });
@@ -195,18 +195,18 @@ const getItem = async (req, res, next, io) => {
   const { taskId } = req.params;
 
   try {
-    const task = await Task.findOne({ _id: taskId, active: true })
+    const task = await TaskItem.findOne({ _id: taskId, active: true })
       .populate('itemListId', 'listTitle isPrivate') // Populate createdByUser field and select displayName
       .populate('createdByUser', 'displayName avatar') // Populate createdByUser field and select displayName
       .populate('assignedToUser', 'displayName avatar'); // Populate assignedToUser field and select displayName
 
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'TaskItem not found' });
     }
 
     const itemList = await ItemList.findById(task.itemListId);
     if (itemList.isPrivate && itemList.createdByUser.toString() !== userId) {
-      return res.status(403).json({ error: 'Task list is private' });
+      return res.status(403).json({ error: 'TaskItem list is private' });
     }
 
     const userGroup = await UserGroup.findOne({ userId, groupId: itemList.groupId });

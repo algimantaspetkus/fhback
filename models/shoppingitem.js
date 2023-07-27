@@ -28,6 +28,12 @@ const taskSchema = new Schema(
     type: {
       type: String,
     },
+    quantity: {
+      type: String,
+    },
+    url: {
+      type: String,
+    },
     completedAt: {
       type: Date,
     },

@@ -34,7 +34,7 @@ const getItems = async (req, res) => {
       }
 
       ShoppingItem.find({ itemListId, active: true })
-        .sort({ priority: -1 })
+        .sort({ required: -1 })
         .then((result) => res.status(200).json({ itemList, shoppingItems: result }))
         .catch(() => {
           return res.status(500).json({ err: 'Internal server error' });
@@ -57,6 +57,8 @@ const addItem = async (req, res, next, io) => {
     itemDescription: joi.string().min(3).max(256),
     required: joi.boolean(),
     type: joi.string(),
+    url: joi.string(),
+    quantity: joi.string(),
   });
 
   const { error } = schema.validate(body);
@@ -114,6 +116,8 @@ const updateItem = async (req, res, next, io) => {
     required: joi.boolean(),
     type: joi.string(),
     completed: joi.boolean(),
+    url: joi.string(),
+    quantity: joi.string(),
   });
 
   const { error: errorData } = schemaData.validate(data);
@@ -151,7 +155,7 @@ const updateItem = async (req, res, next, io) => {
 
     const result = await ShoppingItem.findByIdAndUpdate(shoppingItemId, updatedShoppingItem, { new: true });
     io.to(itemList._id.toString()).emit('shoppingItemAdded');
-    io.to(shoppingItemId.toString()).emit('shoppingItemUpdated');
+    io.to(shoppingItemId.toString()).emit('shoppingItemAdded');
     return res.status(200).json({ shoppingItem: result });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -178,7 +182,7 @@ const deleteItem = async (req, res, next, io) => {
     }
 
     const result = await ShoppingItem.findOneAndUpdate({ _id: shoppingItemId }, { $set: { active: false } }, { new: true });
-    io.to(itemList._id.toString()).emit('shoppingItemItemAdded');
+    io.to(itemList._id.toString()).emit('shoppingItemAdded');
     return res.status(200).json({ result });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -206,7 +210,7 @@ const getItem = async (req, res, next, io) => {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
-    io.to(shoppingItemId.toString()).emit('shoppingItemItemUpdated');
+    io.to(shoppingItemId.toString()).emit('shoppingItemAdded');
     return res.status(200).json({ shoppingItem });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });

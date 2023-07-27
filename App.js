@@ -14,7 +14,7 @@ const shoppingItemRoutes = require('./routes/shoppingitems');
 
 require('dotenv').config();
 
-const { USER, PWD, HOST } = process.env;
+const { USER, PWD, HOST, PORT } = process.env;
 
 const app = express();
 app.use('/avatars', express.static(path.join(__dirname, 'public', 'avatars')));
@@ -24,8 +24,8 @@ app.use(express.json());
 
 const MONGO_URI = `mongodb+srv://${USER}:${PWD}@${HOST}/grouphub?retryWrites=true`;
 
-const server = app.listen(8080, () => {
-  console.log('Server is listening on port 8080');
+const server = app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
 
 const io = SocketIO(server, {

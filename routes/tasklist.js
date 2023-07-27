@@ -6,11 +6,11 @@ const itemListController = require('../controllers/itemList');
 const type = 'task';
 
 const addItemList = (io) => (req, res, next) => {
-  itemListController.addNew(req, res, next, io, type);
+  itemListController.addItemList(req, res, next, io, type);
 };
 
 const getItemList = (io) => (req, res, next) => {
-  itemListController.getTaskList(req, res, next, io, type);
+  itemListController.getItemList(req, res, next, io, type);
 };
 const makePublic = (io) => (req, res, next) => {
   itemListController.makePublic(req, res, next, io);

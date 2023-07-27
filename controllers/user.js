@@ -66,6 +66,7 @@ exports.updateAvatar = (req, res, next) => {
 
 exports.updateDefaultGroup = (req, res, next) => {
   const { body, userId } = req;
+  const { newDefaultGroup: defaultGroupId } = body;
   const schema = joi.object({
     defaultGroupId: joi.string().required(),
   });
@@ -79,7 +80,7 @@ exports.updateDefaultGroup = (req, res, next) => {
         if (!user) {
           return res.status(404).json({ error: 'User not found' });
         }
-        user.defaultGroupId = body.defaultGroupId;
+        user.defaultGroupId = newDefaultGroup;
         const group = Group.findOne({
           _id: body.defaultGroupId,
           $or: [{ ownerId: userId }, { members: userId }],

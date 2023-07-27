@@ -4,7 +4,7 @@ const router = express.Router();
 const groupController = require('../controllers/group');
 
 const addGroup = (io) => (req, res, next) => {
-  groupController.addNew(req, res, next, io);
+  groupController.createItem(req, res, next, io);
 };
 
 const disableGroup = (io) => (req, res, next) => {

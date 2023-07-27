@@ -46,14 +46,15 @@ exports.signup = (req, res, next) => {
 
 exports.login = (req, res, next) => {
   const { body } = req;
+  const { email, password } = body;
   let loadedUser;
-  User.findOne({ email: body.email })
+  User.findOne({ email })
     .then((user) => {
       if (!user) {
         return res.status(401).json({ error: 'Invalid username or password' });
       }
       loadedUser = user;
-      return bcrypt.compare(body.password, user.password);
+      return bcrypt.compare(password, user.password);
     })
     .then((isEqual) => {
       if (!isEqual) {

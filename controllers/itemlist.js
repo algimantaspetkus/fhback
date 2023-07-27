@@ -64,7 +64,7 @@ const disableItemList = async (req, res, next, io) => {
     .save()
     .then(() => {
       io.to(itemList.groupId.toString()).emit('updateTaskList');
-      getTaskList(req, res, next);
+      getItemList(req, res, next);
     })
     .catch((err) => {
       res.status(400).json({ error: 'Something went wrong' });

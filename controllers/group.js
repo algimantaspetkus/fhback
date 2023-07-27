@@ -60,7 +60,7 @@ const disableGroup = (req, res, next, io) => {
     });
 };
 
-const addNew = (req, res, next, io) => {
+const createItem = (req, res, next, io) => {
   const { body } = req;
   const schema = joi.object({
     name: joi.string().min(6).required(),
@@ -226,7 +226,7 @@ const getListMembers = async (req, res) => {
 };
 
 module.exports = {
-  addNew,
+  createItem,
   getGroups,
   disableGroup,
   leaveGroup,

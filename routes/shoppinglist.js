@@ -10,7 +10,7 @@ const addItemList = (io) => (req, res, next) => {
 };
 
 const getItemList = (io) => (req, res, next) => {
-  itemListController.getTaskList(req, res, next, io, type);
+  itemListController.getItemList(req, res, next, io, type);
 };
 const makePublic = (io) => (req, res, next) => {
   itemListController.makePublic(req, res, next, io);
