@@ -25,6 +25,10 @@ const eventSchema = new Schema(
       type: Date,
       required: [true, 'eventDate is required'],
     },
+    type: {
+      type: String,
+      enum: ['birthday', 'gift', 'medical', 'travel', 'graduation', 'party', 'pet', 'food'],
+    },
     active: {
       type: Boolean,
       default: true,
