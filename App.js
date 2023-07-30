@@ -11,6 +11,7 @@ const taskListRoutes = require('./routes/tasklist');
 const shoppingListRoutes = require('./routes/shoppinglist');
 const taskRoutes = require('./routes/taskitems');
 const shoppingItemRoutes = require('./routes/shoppingitems');
+const eventRoutes = require('./routes/eventitems');
 
 require('dotenv').config();
 
@@ -45,20 +46,22 @@ io.on('connection', (socket) => {
   const tasksRouter = taskRoutes(io);
   const shoppingItemRouter = shoppingItemRoutes(io);
   const shoppingRouter = shoppingListRoutes(io);
-  app.use('/group', isAuth, groupRouter);
-  app.use('/tasklist', isAuth, taskListRouter);
-  app.use('/shoppinglist', isAuth, shoppingRouter);
-  app.use('/task', isAuth, tasksRouter);
-  app.use('/shoppingitem', isAuth, shoppingItemRouter);
+  const eventRouter = eventRoutes(io);
+  app.use('/api/group', isAuth, groupRouter);
+  app.use('/api/tasklist', isAuth, taskListRouter);
+  app.use('/api/shoppinglist', isAuth, shoppingRouter);
+  app.use('/api/task', isAuth, tasksRouter);
+  app.use('/api/shoppingitem', isAuth, shoppingItemRouter);
+  app.use('/api/eventitem', isAuth, eventRouter);
 
   socket.on('error', (err) => {
     console.log(err);
   });
 });
 
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
-app.use('/user', isAuth, userRoutes);
+app.use('/api/user', isAuth, userRoutes);
 
 mongoose
   .connect(MONGO_URI, {

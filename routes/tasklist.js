@@ -13,10 +13,10 @@ const getItemList = (io) => (req, res, next) => {
   itemListController.getItemList(req, res, next, io, type);
 };
 const makePublic = (io) => (req, res, next) => {
-  itemListController.makePublic(req, res, next, io);
+  itemListController.makePublic(req, res, next, io, type);
 };
 const disableItemList = (io) => (req, res, next) => {
-  itemListController.disableItemList(req, res, next, io);
+  itemListController.disableItemList(req, res, next, io, type);
 };
 
 module.exports = (io) => {

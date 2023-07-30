@@ -35,7 +35,7 @@ const getItemList = async (req, res, next, io, type) => {
   }
 };
 
-const disableItemList = async (req, res, next, io) => {
+const disableItemList = async (req, res, next, io, type) => {
   const { userId, body } = req;
   const { itemListId } = body;
   // check if itemListId is exists
@@ -63,7 +63,7 @@ const disableItemList = async (req, res, next, io) => {
   itemList
     .save()
     .then(() => {
-      io.to(itemList.groupId.toString()).emit('updateTaskList');
+      io.to(itemList.groupId.toString()).emit(`update${type[0].toUpperCase() + type.slice(1, type.length)}List`);
       getItemList(req, res, next);
     })
     .catch((err) => {
@@ -72,7 +72,7 @@ const disableItemList = async (req, res, next, io) => {
     });
 };
 
-const makePublic = async (req, res, next, io) => {
+const makePublic = async (req, res, next, io, type) => {
   const { userId, body } = req;
   const { itemListId } = body;
   // check if itemListId is exists
@@ -100,7 +100,7 @@ const makePublic = async (req, res, next, io) => {
   itemList
     .save()
     .then(() => {
-      io.to(itemList.groupId.toString()).emit('updateTaskList');
+      io.to(itemList.groupId.toString()).emit(`update${type[0].toUpperCase() + type.slice(1, type.length)}List`);
       getItemList(req, res, next);
     })
     .catch((err) => {
@@ -139,7 +139,7 @@ const addItemList = async (req, res, next, io, type) => {
           itemList
             .save()
             .then(() => {
-              io.to(defaultGroupId.toString()).emit('updateTaskList');
+              io.to(defaultGroupId.toString()).emit(`update${type[0].toUpperCase() + type.slice(1, type.length)}List`);
               getItemList(req, res, next);
             })
             .catch((err) => {
