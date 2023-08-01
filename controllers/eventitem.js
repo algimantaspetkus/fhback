@@ -28,7 +28,7 @@ const addItem = async (req, res, next, io) => {
     }
 
     if (!user.defaultGroupId) {
-      return res.status(404).json({ error: 'User does not have a default group' });
+      return res.status(404).json({ error: 'You have no group set as default' });
     }
 
     const eventItem = new EventItem({
@@ -60,7 +60,7 @@ const getItems = async (req, res, next) => {
     }
 
     if (!user.defaultGroupId) {
-      return res.status(404).json({ error: 'User does not have a default group' });
+      return res.status(404).json({ error: 'You have no group set as default' });
     }
 
     const today = new Date();
@@ -101,7 +101,7 @@ const deleteItem = async (req, res, next, io) => {
     }
 
     if (!user.defaultGroupId) {
-      return res.status(404).json({ error: 'User does not have a default group' });
+      return res.status(404).json({ error: 'You have no group set as default' });
     }
 
     const eventItem = await EventItem.findById(eventItemId);

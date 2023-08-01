@@ -19,7 +19,7 @@ const getItemList = async (req, res, next, io, type) => {
   }
 
   if (!defaultGroupId) {
-    return res.status(400).json({ error: 'You must belong to a group to get the task list' });
+    return res.status(404).json({ error: 'You have no group set as default' });
   }
   try {
     const itemList = await ItemList.find({

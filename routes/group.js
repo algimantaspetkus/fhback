@@ -24,8 +24,8 @@ module.exports = (io) => {
   router.post('/disablegroup', disableGroup(io));
   router.post('/leavegroup', leaveGroup(io));
   router.post('/joingroup', joinGroup(io));
-  router.get('/getListMembers/:listId', groupController.getListMembers);
-  router.get('/getgroupsecret/:groupId', groupController.getGroupSecret);
+  router.get('/listmembers/:listId', groupController.getListMembers);
+  router.get('/groupsecret/:groupId', groupController.getGroupSecret);
   router.get('/getgroups', groupController.getGroups);
 
   return router;

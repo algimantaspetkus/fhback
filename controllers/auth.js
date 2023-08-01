@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const { JWT } = process.env;
 
-exports.signup = (req, res, next) => {
+exports.signup = async (req, res, next) => {
   const { body } = req;
   const schema = joi.object({
     email: joi.string().email().required(),
@@ -17,30 +17,24 @@ exports.signup = (req, res, next) => {
   const { error } = schema.validate(body);
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
-  } else {
-    User.findOne({ email: body.email })
-      .then((existingUser) => {
-        if (existingUser) {
-          return res.status(400).json({ error: 'Email already in use' });
-        } else {
-          return bcrypt.hash(body.password, 12);
-        }
-      })
-      .then((hashedPassword) => {
-        const user = new User(body);
-        user.password = hashedPassword;
-        user.avatar = '/avatars/default.png';
-        return user.save();
-      })
-      .then((result) => {
-        res.status(201).json({ message: 'User created', userId: result._id });
-      })
-      .catch((err) => {
-        if (!err.statusCode) {
-          err.statusCode = 500;
-        }
-        next(err);
-      });
+  }
+  try {
+    const user = await User.findOne({ email: body.email });
+    if (user) {
+      return res.status(400).json({ error: 'Email already in use' });
+    }
+    try {
+      const hashedPassword = await bcrypt.hash(body.password, 12);
+      const newUser = new User(body);
+      newUser.password = hashedPassword;
+      newUser.avatar = '/avatars/default.png';
+      await newUser.save();
+      return res.status(201).json({ message: 'User created', userId: newUser._id });
+    } catch (err) {
+      return res.status(500).json({ error: 'Server error' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Server error' });
   }
 };
 
@@ -51,7 +45,7 @@ exports.login = (req, res, next) => {
   User.findOne({ email })
     .then((user) => {
       if (!user) {
-        return res.status(401).json({ error: 'Invalid username or password' });
+        return res.status(400).json({ error: 'Invalid username or password' });
       }
       loadedUser = user;
       return bcrypt.compare(password, user.password);

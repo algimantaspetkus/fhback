@@ -66,7 +66,7 @@ exports.updateAvatar = (req, res, next) => {
 
 exports.updateDefaultGroup = (req, res, next) => {
   const { body, userId } = req;
-  const { newDefaultGroup: defaultGroupId } = body;
+  const { defaultGroupId: newDefaultGroup } = body;
   const schema = joi.object({
     defaultGroupId: joi.string().required(),
   });
