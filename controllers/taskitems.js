@@ -11,7 +11,6 @@ const getItems = async (req, res) => {
   const schema = joi.object().keys({
     itemListId: joi.string().required(),
   });
-
   const { error } = schema.validate({ itemListId });
 
   if (error) {
@@ -20,34 +19,27 @@ const getItems = async (req, res) => {
 
   try {
     const itemList = await ItemList.findById(itemListId);
+    if (!itemList) {
+      return res.status(404).json({ error: 'TaskItem list not found' });
+    }
 
-    try {
-      const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
-      if (!group) {
-        return res.status(403).json({ err: 'User does not belong to this group' });
-      }
-      if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString()) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-      if (!itemList) {
-        return res.status(404).json({ error: 'TaskItem list not found' });
-      }
-
-      TaskItem.find({ itemListId, active: true })
-        .sort({ priority: -1 })
-        .then((result) => res.status(200).json({ itemList, tasks: result }))
-        .catch(() => {
-          res.status(500).json({ err: 'Internal server error' });
-        });
-    } catch (err) {
+    const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
+    if (!group) {
       return res.status(403).json({ err: 'User does not belong to this group' });
     }
+
+    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const tasks = await TaskItem.find({ itemListId, active: true }).sort({ priority: -1 });
+    return res.status(200).json({ itemList, tasks });
   } catch (err) {
-    res.status(500).json({ err: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-const addItem = async (req, res, next, io) => {
+const addItem = async (req, res, io) => {
   const { body } = req;
   const { userId } = req;
 
@@ -70,39 +62,29 @@ const addItem = async (req, res, next, io) => {
 
   try {
     const itemList = await ItemList.findById(itemListId);
+    if (!itemList) {
+      return res.status(404).json({ error: 'TaskItem list not found' });
+    }
 
-    try {
-      const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
-      if (!group) {
-        return res.status(403).json({ err: 'User does not belong to this group' });
-      }
-
-      if (itemList.isPrivate && itemList.createdByUser !== userId.toString()) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-      if (!itemList) {
-        return res.status(404).json({ error: 'TaskItem list not found' });
-      }
-
-      const task = new TaskItem({ ...body, createdByUser: userId });
-      task
-        .save()
-        .then(async (result) => {
-          io.to(itemListId.toString()).emit('taskItemAdded');
-          return res.status(200).json({ task: result });
-        })
-        .catch(() => {
-          res.status(500).json({ err: 'Internal server error' });
-        });
-    } catch (err) {
+    const group = await UserGroup.findOne({ userId, groupId: itemList.groupId });
+    if (!group) {
       return res.status(403).json({ err: 'User does not belong to this group' });
     }
+
+    if (itemList.isPrivate && itemList.createdByUser !== userId.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const task = new TaskItem({ ...body, createdByUser: userId });
+    const result = await task.save();
+    io.to(itemListId.toString()).emit('updateTaskItem');
+    return res.status(200).json({ task: result });
   } catch (err) {
-    res.status(500).json({ err: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-const updateItem = async (req, res, next, io) => {
+const updateItem = async (req, res, io) => {
   const { userId, body } = req;
   const { taskId, data } = body;
 
@@ -125,7 +107,9 @@ const updateItem = async (req, res, next, io) => {
   const { error } = schema.validate(body);
 
   if (error || errorData) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json(
+      { error: error?.details[0].message || errorData?.details[0].message },
+    );
   }
 
   try {
@@ -153,18 +137,28 @@ const updateItem = async (req, res, next, io) => {
       updatedTask.completedAt = undefined;
     }
 
+    const { _id } = itemList;
     const result = await TaskItem.findByIdAndUpdate(taskId, updatedTask, { new: true });
-    io.to(itemList._id.toString()).emit('taskItemAdded');
-    io.to(taskId.toString()).emit('taskItemUpdated');
+    io.to(_id.toString()).emit('updateTaskItem');
+    io.to(taskId.toString()).emit('updateTaskItem');
     return res.status(200).json({ task: result });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-const deleteItem = async (req, res, next, io) => {
+const deleteItem = async (req, res, io) => {
   const { userId } = req;
   const { taskId } = req.params;
+
+  const schema = joi.object().keys({
+    taskId: joi.string().required(),
+  });
+  const { error } = schema.validate(req.params);
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
 
   try {
     const task = await TaskItem.findOne({ _id: taskId, active: true });
@@ -181,18 +175,32 @@ const deleteItem = async (req, res, next, io) => {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
-    const result = await TaskItem.findOneAndUpdate({ _id: taskId }, { $set: { active: false } }, { new: true });
+    const { _id } = itemList;
+    const result = await TaskItem.findOneAndUpdate(
+      { _id: taskId },
+      { $set: { active: false } },
+      { new: true },
+    );
 
-    io.to(itemList._id.toString()).emit('taskItemAdded');
+    io.to(_id.toString()).emit('updateTaskItem');
     return res.status(200).json({ result });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-const getItem = async (req, res, next, io) => {
+const getItem = async (req, res, io) => {
   const { userId } = req;
   const { taskId } = req.params;
+
+  const schema = joi.object().keys({
+    taskId: joi.string().required(),
+  });
+  const { error } = schema.validate(req.params);
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
 
   try {
     const task = await TaskItem.findOne({ _id: taskId, active: true })
@@ -214,12 +222,13 @@ const getItem = async (req, res, next, io) => {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
-    io.to(taskId.toString()).emit('taskItemUpdated');
+    io.to(taskId.toString()).emit('updateTaskItem');
     return res.status(200).json({ task });
   } catch (err) {
-    console.log(err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-module.exports = { addItem, getItem, updateItem, deleteItem, getItems };
+module.exports = {
+  addItem, getItem, updateItem, deleteItem, getItems,
+};

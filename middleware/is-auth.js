@@ -18,7 +18,7 @@ module.exports = (req, res, next) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     req.userId = decodedToken.userId;
-    next();
+    return next();
   } catch (err) {
     return res.status(500).json({ message: 'Token verification failed' });
   }

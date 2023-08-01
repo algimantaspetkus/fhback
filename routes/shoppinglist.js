@@ -1,28 +1,28 @@
 const express = require('express');
 
 const router = express.Router();
-const itemListController = require('../controllers/itemList');
+const itemListController = require('../controllers/itemlist');
 
 const type = 'shopping';
 
-const addItemList = (io) => (req, res, next) => {
-  itemListController.addItemList(req, res, next, io, type);
+const addItemList = (io) => (req, res) => {
+  itemListController.addItemList(req, res, io, type);
 };
 
-const getItemList = (io) => (req, res, next) => {
-  itemListController.getItemList(req, res, next, io, type);
+const getItemList = () => (req, res) => {
+  itemListController.getItemList(req, res, type);
 };
-const makePublic = (io) => (req, res, next) => {
-  itemListController.makePublic(req, res, next, io, type);
+const makePublic = (io) => (req, res) => {
+  itemListController.makePublic(req, res, io, type);
 };
-const disableItemList = (io) => (req, res, next) => {
-  itemListController.disableItemList(req, res, next, io, type);
+const disableItemList = (io) => (req, res) => {
+  itemListController.disableItemList(req, res, io, type);
 };
 
 module.exports = (io) => {
   router.post('/add', addItemList(io));
   router.put('/makepublic', makePublic(io));
   router.put('/disable', disableItemList(io));
-  router.get('/list', getItemList(io));
+  router.get('/list', getItemList);
   return router;
 };

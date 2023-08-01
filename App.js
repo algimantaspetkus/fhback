@@ -15,7 +15,9 @@ const eventRoutes = require('./routes/eventitems');
 
 require('dotenv').config();
 
-const { USER, PWD, HOST, PORT } = process.env;
+const {
+  USER, PWD, HOST, PORT,
+} = process.env;
 
 const app = express();
 app.use('/avatars', express.static(path.join(__dirname, 'public', 'avatars')));

@@ -16,186 +16,179 @@ const generateRandomString = () => {
   return result;
 };
 
-const getGroups = (req, res, next) => {
+const getGroups = async (req, res) => {
   const { userId } = req;
-  UserGroup.find({ userId })
-    .populate({
+  try {
+    const userGroups = await UserGroup.find({ userId }).populate({
       path: 'groupId',
       select: 'name active',
       match: { active: true },
-    })
-    .sort({ createdAt: -1 })
-    .then((result) => {
-      const filteredResult = result.filter((item) => item.groupId !== null);
-      res.status(200).json({ groups: filteredResult });
-    })
-    .catch((err) => {
-      res.status(400).json({ error: 'Something went wrong' });
-      next(err);
-    });
+    }).sort({ createdAt: -1 });
+    return res.status(200).json({ groups: userGroups });
+  } catch (err) {
+    return res.status(400).json({ error: 'Internal server error' });
+  }
 };
 
-const disableGroup = (req, res, next, io) => {
+const disableGroup = async (req, res, io) => {
   const { groupId } = req.body;
   const { userId } = req;
-  UserGroup.findOne({ groupId, userId })
-    .then((result) => {
-      if (result.role === 'owner') {
-        Group.findOneAndUpdate({ _id: groupId }, { active: false }, { new: true })
-          .then(() => {
-            io.to(userId).emit('updateGroup');
-            getGroups(req, res, next);
-          })
-          .catch((err) => {
-            res.status(400).json({ error: 'Something went wrong' });
-            next(err);
-          });
-      } else {
-        res.status(400).json({ error: 'You are not the owner' });
-      }
-    })
-    .catch((err) => {
-      res.status(400).json({ error: 'Something went wrong' });
-      next(err);
-    });
+  try {
+    const userGroup = await UserGroup.findOne({ groupId, userId });
+    if (!userGroup) {
+      return res.status(400).json({ error: 'Group does not exist' });
+    }
+    if (userGroup.role !== 'owner') {
+      return res.status(400).json({ error: 'You are not the owner' });
+    }
+    if (userGroup.role === 'owner') {
+      await Group.findOneAndUpdate({ _id: groupId }, { active: false }, { new: true });
+      io.to(userId).emit('updateGroup');
+      return getGroups(req, res);
+    }
+    return res.status(400).json({ error: 'Something went wrong' });
+  } catch (err) {
+    return res.status(400).json({ error: 'Internal server error' });
+  }
 };
 
-const createItem = (req, res, next, io) => {
+const createItem = async (req, res, io) => {
+  const { userId } = req;
   const { body } = req;
   const schema = joi.object({
     name: joi.string().min(6).required(),
   });
 
   const { error } = schema.validate(body);
+
   if (error) {
-    res.status(400).json({ error: error.details[0].message });
-  } else {
-    const group = new Group({
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const newGroup = new Group({
       name: body.name,
       secret: generateRandomString(),
     });
-    group
-      .save()
-      .then((result) => {
-        const { _id } = result;
-        const { userId } = req;
-        const userGroup = new UserGroup({
-          userId,
-          groupId: _id,
-          role: 'owner',
-        });
-        userGroup
-          .save()
-          .then((resp) => {
-            io.to(userId).emit('updateGroup');
-            res.status(200).json({ groupId: resp.groupId });
-          })
-          .catch((err) => {
-            res.status(400).json({ error: 'Something went wrong' });
-            next(err);
-          });
-      })
-      .catch((err) => {
-        res.status(400).json({ error: 'Something went wrong' });
-        next(err);
-      });
+
+    const group = await newGroup.save();
+    const { _id } = group;
+    const newUserGroup = new UserGroup({
+      userId,
+      groupId: _id,
+      role: 'owner',
+    });
+
+    await newUserGroup.save();
+    io.to(userId).emit('updateGroup');
+    return res.status(200).json({ groupId: _id });
+  } catch (err) {
+    return res.status(500).json({ err: 'Internal server error' });
   }
 };
 
-const leaveGroup = (req, res, next, io) => {
-  const { groupId } = req.body;
-  const { userId } = req;
-  UserGroup.findOne({ groupId, userId })
-    .then((result) => {
-      if (result.role !== 'owner') {
-        UserGroup.findOneAndDelete({ groupId, userId })
-          .then(() => {
-            io.to(userId).emit('updateGroup');
-            getGroups(req, res, next);
-          })
-          .catch((err) => {
-            res.status(400).json({ error: 'Something went wrong' });
-            next(err);
-          });
-      } else {
-        res.status(400).json({ error: 'Owners can not leave' });
-      }
-    })
-    .catch((err) => {
-      res.status(400).json({ error: 'Something went wrong' });
-      next(err);
-    });
+const leaveGroup = async (req, res, io) => {
+  const { userId, body } = req;
+  const { groupId } = body;
+  const schema = joi.object({
+    groupId: joi.string().required(),
+  });
+  const { error } = schema.validate(body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+  try {
+    const userGroup = await UserGroup.findOne({ groupId, userId });
+    if (!userGroup) {
+      return res.status(400).json({ error: 'Group does not exist' });
+    }
+    if (userGroup.role === 'owner') {
+      return res.status(400).json({ error: 'Owners can not leave' });
+    }
+    await UserGroup.findOneAndDelete({ groupId, userId });
+    io.to(userId).emit('updateGroup');
+    return getGroups(req, res);
+  } catch (err) {
+    return res.status(400).json({ error: 'Internal server error' });
+  }
 };
 
-const getGroupSecret = (req, res, next) => {
+const getGroupSecret = async (req, res) => {
   const { groupId } = req.params;
   const { userId } = req;
-  UserGroup.findOne({ groupId, userId })
-    .then((result) => {
-      if (result.role === 'owner') {
-        Group.findOne({ _id: groupId })
-          .then(({ secret }) => {
-            res.status(200).json({ secret });
-          })
-          .catch((err) => {
-            res.status(400).json({ error: 'Something went wrong' });
-            next(err);
-          });
-      } else {
-        res.status(400).json({ error: 'You are not the owner' });
-      }
-    })
-    .catch((err) => {
-      res.status(400).json({ error: 'Something went wrong' });
-      next(err);
-    });
+  const schema = joi.object({
+    groupId: joi.string().required(),
+  });
+  const { error } = schema.validate(req.params);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+  try {
+    const userGroup = await UserGroup.findOne({ groupId, userId });
+    if (!userGroup) {
+      return res.status(400).json({ error: 'Group does not exist' });
+    }
+    if (userGroup.role !== 'owner') {
+      return res.status(400).json({ error: 'You are not the owner' });
+    }
+    if (userGroup.role === 'owner') {
+      return res.status(200).json({ secret: userGroup.secret });
+    }
+    return res.status(400).json({ error: 'Something went wrong' });
+  } catch (err) {
+    return res.status(400).json({ error: 'Internal server error' });
+  }
 };
 
-const joinGroup = (req, res, next, io) => {
-  const { secret } = req.body;
-  const { userId } = req;
-  Group.findOne({ secret })
-    .then(({ active, groupId, _id }) => {
-      if (active) {
-        UserGroup.findOne({ userId, groupId })
-          .then((belongs) => {
-            if (belongs === null) {
-              const userGroup = new UserGroup({
-                userId,
-                groupId: _id,
-                role: 'guest',
-              });
-              userGroup
-                .save()
-                .then(() => {
-                  io.to(userId).emit('updateGroup');
-                  getGroups(req, res, next);
-                })
-                .catch((err) => {
-                  res.status(400).json({ error: 'Something went wrong' });
-                  next(err);
-                });
-            } else {
-              res.status(400).json({ error: 'You already belong to a group' });
-            }
-          })
-          .catch((err) => {
-            res.status(400).json({ error: 'Something went wrong' });
-            next(err);
-          });
-      } else {
-        res.status(400).json({ error: 'Group is not active' });
-      }
-    })
-    .catch((err) => {
-      res.status(400).json({ error: 'Something went wrong' });
-      next(err);
+const joinGroup = async (req, res, io) => {
+  const { userId, body } = req;
+  const { secret } = body;
+
+  const schema = joi.object({
+    secret: joi.string().required(),
+  });
+  const { error } = schema.validate(body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  try {
+    const group = await Group.findOne({ secret });
+    if (!group) {
+      return res.status(400).json({ error: 'Invalid code' });
+    }
+    const { _id, active } = group;
+    if (!active) {
+      return res.status(400).json({ error: 'Group is not active' });
+    }
+    const userGroup = await UserGroup.findOne({ groupId: _id, userId });
+    if (userGroup) {
+      return res.status(400).json({ error: 'You are already in this group' });
+    }
+    const newUserGroup = new UserGroup({
+      userId,
+      groupId: _id,
+      role: 'guest',
     });
+    await newUserGroup.save();
+    io.to(userId).emit('updateGroup');
+    return getGroups(req, res);
+  } catch (err) {
+    return res.status(400).json({ error: 'Internal server error' });
+  }
 };
 
 const getListMembers = async (req, res) => {
   const { listId } = req.params;
   const { userId } = req;
+
+  const schema = joi.object({
+    listId: joi.string().required(),
+  });
+  const { error } = schema.validate(req.params);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
 
   try {
     const list = await ItemList.findOne({ _id: listId });
@@ -209,7 +202,7 @@ const getListMembers = async (req, res) => {
         return res.status(404).json({ error: 'User not found' });
       }
       return res.status(200).json({ members: [user] });
-    } else if (!list.isPrivate) {
+    } if (!list.isPrivate) {
       const userGroup = await UserGroup.find({ groupId: list.groupId });
       if (!userGroup || userGroup.length === 0) {
         return res.status(400).json({ error: 'You cannot access this list' });
@@ -220,8 +213,8 @@ const getListMembers = async (req, res) => {
       return res.status(200).json({ members: groupMembers });
     }
     return res.status(400).json({ error: 'You cannot access this list' });
-  } catch (error) {
-    return res.status(500).json({ error: 'Something went wrong' });
+  } catch (err) {
+    return res.status(400).json({ error: 'Internal server error' });
   }
 };
 

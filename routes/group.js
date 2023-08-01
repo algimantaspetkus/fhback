@@ -3,20 +3,20 @@ const express = require('express');
 const router = express.Router();
 const groupController = require('../controllers/group');
 
-const addGroup = (io) => (req, res, next) => {
-  groupController.createItem(req, res, next, io);
+const addGroup = (io) => (req, res) => {
+  groupController.createItem(req, res, io);
 };
 
-const disableGroup = (io) => (req, res, next) => {
-  groupController.disableGroup(req, res, next, io);
+const disableGroup = (io) => (req, res) => {
+  groupController.disableGroup(req, res, io);
 };
 
-const leaveGroup = (io) => (req, res, next) => {
-  groupController.leaveGroup(req, res, next, io);
+const leaveGroup = (io) => (req, res) => {
+  groupController.leaveGroup(req, res, io);
 };
 
-const joinGroup = (io) => (req, res, next) => {
-  groupController.joinGroup(req, res, next, io);
+const joinGroup = (io) => (req, res) => {
+  groupController.joinGroup(req, res, io);
 };
 
 module.exports = (io) => {

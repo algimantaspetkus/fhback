@@ -3,7 +3,7 @@ const EventItem = require('../models/eventitem');
 const User = require('../models/user');
 require('dotenv').config();
 
-const addItem = async (req, res, next, io) => {
+const addItem = async (req, res, io) => {
   const { body } = req;
   const { userId } = req;
 
@@ -45,11 +45,11 @@ const addItem = async (req, res, next, io) => {
       return res.status(500).json({ err: 'Internal server error' });
     }
   } catch (err) {
-    res.status(500).json({ err: 'Internal server error' });
+    return res.status(500).json({ err: 'Internal server error' });
   }
 };
 
-const getItems = async (req, res, next) => {
+const getItems = async (req, res) => {
   const { userId } = req;
 
   try {
@@ -87,7 +87,7 @@ const getItems = async (req, res, next) => {
   }
 };
 
-const deleteItem = async (req, res, next, io) => {
+const deleteItem = async (req, res, io) => {
   const { userId } = req;
   const { eventItemId } = req.params;
   if (!eventItemId) {
@@ -112,9 +112,8 @@ const deleteItem = async (req, res, next, io) => {
     eventItem.active = false;
     await eventItem.save();
     io.emit('updateEventItems', eventItem);
-    getItems(req, res, next);
+    return getItems(req, res);
   } catch (err) {
-    console.error(err);
     return res.status(500).json({ err: 'Internal server error' });
   }
 };

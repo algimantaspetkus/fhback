@@ -3,12 +3,12 @@ const express = require('express');
 const router = express.Router();
 const eventController = require('../controllers/eventitem');
 
-const addItem = (io) => (req, res, next) => {
-  eventController.addItem(req, res, next, io);
+const addItem = (io) => (req, res) => {
+  eventController.addItem(req, res, io);
 };
 
-const deleteItem = (io) => (req, res, next) => {
-  eventController.deleteItem(req, res, next, io);
+const deleteItem = (io) => (req, res) => {
+  eventController.deleteItem(req, res, io);
 };
 
 module.exports = (io) => {
