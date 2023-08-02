@@ -113,6 +113,10 @@ const leaveGroup = async (req, res, io) => {
       return res.status(400).json({ error: 'Owners can not leave' });
     }
     await UserGroup.findOneAndDelete({ groupId, userId });
+    const user = User.findById({ _id: userId });
+    if (user.defaultGroupId.toString() === groupId.toString()) {
+      await User.findOneAndUpdate({ _id: userId }, { defaultGroupId: null }, { new: true });
+    }
     io.to(userId).emit('updateGroup');
     return getGroups(req, res);
   } catch (err) {
