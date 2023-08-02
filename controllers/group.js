@@ -114,7 +114,7 @@ const leaveGroup = async (req, res, io) => {
     }
     await UserGroup.findOneAndDelete({ groupId, userId });
     const user = User.findById({ _id: userId });
-    if (user.defaultGroupId.toString() === groupId.toString()) {
+    if (user.defaultGroupId === groupId) {
       await User.findOneAndUpdate({ _id: userId }, { defaultGroupId: null }, { new: true });
     }
     io.to(userId).emit('updateGroup');
