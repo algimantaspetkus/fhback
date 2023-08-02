@@ -31,9 +31,9 @@ const getItems = async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const shoppingItems = await ShoppingItem
-      .find({ itemListId, active: true })
-      .sort({ required: -1 });
+    const shoppingItems = await ShoppingItem.find({ itemListId, active: true }).sort({
+      required: -1,
+    });
 
     return res.status(200).json({ itemList, shoppingItems });
   } catch (err) {
@@ -48,7 +48,7 @@ const addItem = async (req, res, io) => {
   const schema = joi.object().keys({
     itemListId: joi.string().required(),
     itemTitle: joi.string().required().min(3).max(64),
-    itemDescription: joi.string().min(3).max(256),
+    itemDescription: joi.string().max(256),
     required: joi.boolean(),
     type: joi.string(),
     url: joi.string(),
@@ -69,7 +69,7 @@ const addItem = async (req, res, io) => {
     if (!group) {
       return res.status(403).json({ err: 'User does not belong to this group' });
     }
-    if (itemList.isPrivate && itemList.createdByUser !== userId.toString()) {
+    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString()) {
       return res.status(403).json({ error: 'Access denied' });
     }
     const shoppingItem = new ShoppingItem({ ...body, createdByUser: userId });
@@ -92,7 +92,7 @@ const updateItem = async (req, res, io) => {
 
   const schemaData = joi.object().keys({
     itemTitle: joi.string().min(3).max(64),
-    itemDescription: joi.string().min(3).max(256),
+    itemDescription: joi.string().max(256),
     required: joi.boolean(),
     type: joi.string(),
     completed: joi.boolean(),
@@ -105,9 +105,9 @@ const updateItem = async (req, res, io) => {
   const { error } = schema.validate(body);
 
   if (error || errorData) {
-    return res.status(400).json(
-      { error: error?.details[0].message || errorData?.details[0].message },
-    );
+    return res
+      .status(400)
+      .json({ error: error?.details[0].message || errorData?.details[0].message });
   }
 
   try {
@@ -136,8 +136,9 @@ const updateItem = async (req, res, io) => {
     }
 
     const { _id } = itemList;
-    const result = await ShoppingItem
-      .findByIdAndUpdate(shoppingItemId, updatedShoppingItem, { new: true });
+    const result = await ShoppingItem.findByIdAndUpdate(shoppingItemId, updatedShoppingItem, {
+      new: true,
+    });
     io.to(_id.toString()).emit('updateShoppingItem');
     io.to(shoppingItemId.toString()).emit('updateShoppingItem');
     return res.status(200).json({ shoppingItem: result });
@@ -175,8 +176,11 @@ const deleteItem = async (req, res, io) => {
     }
 
     const { _id } = itemList;
-    const result = await ShoppingItem
-      .findOneAndUpdate({ _id: shoppingItemId }, { $set: { active: false } }, { new: true });
+    const result = await ShoppingItem.findOneAndUpdate(
+      { _id: shoppingItemId },
+      { $set: { active: false } },
+      { new: true },
+    );
     io.to(_id.toString()).emit('updateShoppingItem');
     return res.status(200).json({ result });
   } catch (err) {
@@ -184,7 +188,7 @@ const deleteItem = async (req, res, io) => {
   }
 };
 
-const getItem = async (req, res, io) => {
+const getItem = async (req, res) => {
   const { userId } = req;
   const { shoppingItemId } = req.params;
 
@@ -198,7 +202,10 @@ const getItem = async (req, res, io) => {
   }
 
   try {
-    const shoppingItem = await ShoppingItem.findOne({ _id: shoppingItemId, active: true }).populate('createdByUser', 'displayName');
+    const shoppingItem = await ShoppingItem.findOne({ _id: shoppingItemId, active: true }).populate(
+      'createdByUser',
+      'displayName',
+    );
     if (!shoppingItem) {
       return res.status(404).json({ error: 'ShoppingItem not found' });
     }
@@ -213,7 +220,6 @@ const getItem = async (req, res, io) => {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }
 
-    io.to(shoppingItemId.toString()).emit('updateShoppingItem');
     return res.status(200).json({ shoppingItem });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -221,5 +227,9 @@ const getItem = async (req, res, io) => {
 };
 
 module.exports = {
-  addItem, getItem, updateItem, deleteItem, getItems,
+  addItem,
+  getItem,
+  updateItem,
+  deleteItem,
+  getItems,
 };

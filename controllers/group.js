@@ -19,14 +19,17 @@ const generateRandomString = () => {
 const getGroups = async (req, res) => {
   const { userId } = req;
   try {
-    const userGroups = await UserGroup.find({ userId }).populate({
-      path: 'groupId',
-      select: 'name active',
-      match: { active: true },
-    }).sort({ createdAt: -1 });
-    return res.status(200).json({ groups: userGroups });
+    const userGroups = await UserGroup.find({ userId })
+      .populate({
+        path: 'groupId',
+        select: 'name active',
+        match: { active: true },
+      })
+      .sort({ createdAt: -1 });
+    const filtered = userGroups.filter((group) => group.groupId !== null);
+    return res.status(200).json({ groups: filtered });
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -43,12 +46,16 @@ const disableGroup = async (req, res, io) => {
     }
     if (userGroup.role === 'owner') {
       await Group.findOneAndUpdate({ _id: groupId }, { active: false }, { new: true });
+      const user = await User.findOne({ _id: userId });
+      if (user.defaultGroupId.toString() === groupId.toString()) {
+        await User.findOneAndUpdate({ _id: userId }, { defaultGroupId: null }, { new: true });
+      }
       io.to(userId).emit('updateGroup');
       return getGroups(req, res);
     }
     return res.status(400).json({ error: 'Something went wrong' });
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -109,7 +116,7 @@ const leaveGroup = async (req, res, io) => {
     io.to(userId).emit('updateGroup');
     return getGroups(req, res);
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -131,12 +138,15 @@ const getGroupSecret = async (req, res) => {
     if (userGroup.role !== 'owner') {
       return res.status(400).json({ error: 'You are not the owner' });
     }
-    if (userGroup.role === 'owner') {
-      return res.status(200).json({ secret: userGroup.secret });
+
+    const group = await Group.findOne({ _id: groupId });
+
+    if (group && userGroup.role === 'owner') {
+      return res.status(200).json({ secret: group.secret });
     }
     return res.status(400).json({ error: 'Something went wrong' });
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -174,7 +184,7 @@ const joinGroup = async (req, res, io) => {
     io.to(userId).emit('updateGroup');
     return getGroups(req, res);
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -202,7 +212,8 @@ const getListMembers = async (req, res) => {
         return res.status(404).json({ error: 'User not found' });
       }
       return res.status(200).json({ members: [user] });
-    } if (!list.isPrivate) {
+    }
+    if (!list.isPrivate) {
       const userGroup = await UserGroup.find({ groupId: list.groupId });
       if (!userGroup || userGroup.length === 0) {
         return res.status(400).json({ error: 'You cannot access this list' });
@@ -214,7 +225,7 @@ const getListMembers = async (req, res) => {
     }
     return res.status(400).json({ error: 'You cannot access this list' });
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 

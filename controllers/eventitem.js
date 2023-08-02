@@ -9,9 +9,11 @@ const addItem = async (req, res, io) => {
 
   const schema = joi.object().keys({
     eventTitle: joi.string().required().min(3).max(64),
-    eventDescription: joi.string().min(3).max(256),
+    eventDescription: joi.string().max(256),
     eventDate: joi.date().allow(null),
-    type: joi.string().valid('birthday', 'gift', 'medical', 'travel', 'graduation', 'party', 'pet', 'food'),
+    type: joi
+      .string()
+      .valid('birthday', 'gift', 'medical', 'travel', 'graduation', 'party', 'pet', 'food'),
   });
 
   const { error } = schema.validate(body);
@@ -28,7 +30,7 @@ const addItem = async (req, res, io) => {
     }
 
     if (!user.defaultGroupId) {
-      return res.status(404).json({ error: 'You have no group set as default' });
+      return res.status(404).json({ error: 'Please set an active group' });
     }
 
     const eventItem = new EventItem({
@@ -60,7 +62,7 @@ const getItems = async (req, res) => {
     }
 
     if (!user.defaultGroupId) {
-      return res.status(404).json({ error: 'You have no group set as default' });
+      return res.status(404).json({ error: 'Please set an active group' });
     }
 
     const today = new Date();
@@ -101,7 +103,7 @@ const deleteItem = async (req, res, io) => {
     }
 
     if (!user.defaultGroupId) {
-      return res.status(404).json({ error: 'You have no group set as default' });
+      return res.status(404).json({ error: 'Please set an active group' });
     }
 
     const eventItem = await EventItem.findById(eventItemId);

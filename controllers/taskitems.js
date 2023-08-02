@@ -46,7 +46,7 @@ const addItem = async (req, res, io) => {
   const schema = joi.object().keys({
     itemListId: joi.string().required(),
     taskTitle: joi.string().required().min(3).max(64),
-    taskDescription: joi.string().min(3).max(256),
+    taskDescription: joi.string().max(256),
     assignedToUser: joi.string().allow(null),
     dueBy: joi.date().allow(null),
     priority: joi.number().min(0).max(100).default(0),
@@ -71,7 +71,7 @@ const addItem = async (req, res, io) => {
       return res.status(403).json({ err: 'User does not belong to this group' });
     }
 
-    if (itemList.isPrivate && itemList.createdByUser !== userId.toString()) {
+    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString()) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -95,7 +95,7 @@ const updateItem = async (req, res, io) => {
 
   const schemaData = joi.object().keys({
     taskTitle: joi.string().min(3).max(64),
-    taskDescription: joi.string().min(3).max(256),
+    taskDescription: joi.string().max(256),
     assignedToUser: joi.string().allow(null),
     dueBy: joi.date().allow(null),
     priority: joi.number().min(0).max(100).default(0),
@@ -107,9 +107,9 @@ const updateItem = async (req, res, io) => {
   const { error } = schema.validate(body);
 
   if (error || errorData) {
-    return res.status(400).json(
-      { error: error?.details[0].message || errorData?.details[0].message },
-    );
+    return res
+      .status(400)
+      .json({ error: error?.details[0].message || errorData?.details[0].message });
   }
 
   try {
@@ -189,7 +189,7 @@ const deleteItem = async (req, res, io) => {
   }
 };
 
-const getItem = async (req, res, io) => {
+const getItem = async (req, res) => {
   const { userId } = req;
   const { taskId } = req.params;
 
@@ -221,8 +221,6 @@ const getItem = async (req, res, io) => {
     if (!userGroup) {
       return res.status(403).json({ error: 'User does not belong to this group' });
     }
-
-    io.to(taskId.toString()).emit('updateTaskItem');
     return res.status(200).json({ task });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -230,5 +228,9 @@ const getItem = async (req, res, io) => {
 };
 
 module.exports = {
-  addItem, getItem, updateItem, deleteItem, getItems,
+  addItem,
+  getItem,
+  updateItem,
+  deleteItem,
+  getItems,
 };

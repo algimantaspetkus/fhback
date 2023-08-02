@@ -23,6 +23,6 @@ module.exports = (io) => {
   router.post('/add', addItemList(io));
   router.put('/makepublic', makePublic(io));
   router.put('/disable', disableItemList(io));
-  router.get('/list', getItemList);
+  router.get('/list', getItemList());
   return router;
 };

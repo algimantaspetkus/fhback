@@ -2,5 +2,6 @@
     "endOfLine": "crlf",
     "singleQuote": true,
     "trailingComma": "all",
-    "printWidth": 220
+    "printWidth": 100,
+    "proseWrap": "always"
 }

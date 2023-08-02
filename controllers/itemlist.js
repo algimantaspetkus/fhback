@@ -10,12 +10,15 @@ const getItemList = async (req, res, type) => {
   try {
     const { defaultGroupId } = await User.findById(userId);
     if (!defaultGroupId) {
-      return res.status(400).json({ error: 'Default group is not set' });
+      return res.status(400).json({ error: 'Please set an active group' });
     }
     const itemList = await ItemList.find({
       $or: [
         {
-          groupId: defaultGroupId.toString(), isPrivate: false, active: true, type,
+          groupId: defaultGroupId.toString(),
+          isPrivate: false,
+          active: true,
+          type,
         },
         {
           groupId: defaultGroupId.toString(),
@@ -28,7 +31,7 @@ const getItemList = async (req, res, type) => {
     });
     return res.status(200).json({ itemList });
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -53,15 +56,21 @@ const disableItemList = async (req, res, io, type) => {
     if (!userGroup) {
       return res.status(400).json({ error: 'User does not belong to this group' });
     }
-    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString() && !userGroup.role !== 'owner') {
+    if (
+      itemList.isPrivate &&
+      itemList.createdByUser.toString() !== userId.toString() &&
+      !userGroup.role !== 'owner'
+    ) {
       return res.status(403).json({ error: 'Access denied' });
     }
     itemList.active = false;
     await itemList.save();
-    io.to(itemList.groupId.toString()).emit(`update${type[0].toUpperCase() + type.slice(1, type.length)}List`);
+    io.to(itemList.groupId.toString()).emit(
+      `update${type[0].toUpperCase() + type.slice(1, type.length)}List`,
+    );
     return getItemList(req, res, type);
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -86,19 +95,25 @@ const makePublic = async (req, res, io, type) => {
     if (!userGroup) {
       return res.status(400).json({ error: 'User does not belong to this group' });
     }
-    if (itemList.isPrivate && itemList.createdByUser.toString() !== userId.toString() && !userGroup.role !== 'owner') {
+    if (
+      itemList.isPrivate &&
+      itemList.createdByUser.toString() !== userId.toString() &&
+      !userGroup.role !== 'owner'
+    ) {
       return res.status(403).json({ error: 'Access denied' });
     }
     itemList.isPrivate = false;
     await itemList.save();
-    io.to(itemList.groupId.toString()).emit(`update${type[0].toUpperCase() + type.slice(1, type.length)}List`);
+    io.to(itemList.groupId.toString()).emit(
+      `update${type[0].toUpperCase() + type.slice(1, type.length)}List`,
+    );
     return getItemList(req, res, type);
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-const addItemList = async (req, res, next, io, type) => {
+const addItemList = async (req, res, io, type) => {
   const { userId, body } = req;
   const { listTitle, isPrivate } = body;
 
@@ -115,7 +130,7 @@ const addItemList = async (req, res, next, io, type) => {
   try {
     const { defaultGroupId } = await User.findById(userId);
     if (!defaultGroupId) {
-      return res.status(400).json({ error: 'Default group is not set' });
+      return res.status(400).json({ error: 'Please set an active group' });
     }
     const group = await Group.findById(defaultGroupId);
     if (!group.active) {
@@ -129,13 +144,18 @@ const addItemList = async (req, res, next, io, type) => {
       type,
     });
     await itemList.save();
-    io.to(defaultGroupId.toString()).emit(`update${type[0].toUpperCase() + type.slice(1, type.length)}List`);
+    io.to(defaultGroupId.toString()).emit(
+      `update${type[0].toUpperCase() + type.slice(1, type.length)}List`,
+    );
     return getItemList(req, res, type);
   } catch (err) {
-    return res.status(400).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 module.exports = {
-  getItemList, addItemList, disableItemList, makePublic,
+  getItemList,
+  addItemList,
+  disableItemList,
+  makePublic,
 };
