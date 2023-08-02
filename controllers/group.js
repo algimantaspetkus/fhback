@@ -220,7 +220,9 @@ const getListMembers = async (req, res) => {
       }
 
       const userIds = userGroup.map((group) => group.userId);
-      const groupMembers = await User.find({ _id: { $in: userIds } });
+      const groupMembers = await User.find({ _id: { $in: userIds } }).select(
+        '_id displayName email avatar',
+      );
       return res.status(200).json({ members: groupMembers });
     }
     return res.status(400).json({ error: 'You cannot access this list' });
