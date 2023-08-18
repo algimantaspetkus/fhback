@@ -15,9 +15,7 @@ const eventRoutes = require('./routes/eventitems');
 
 require('dotenv').config();
 
-const {
-  USER, PWD, HOST, PORT,
-} = process.env;
+const { USER, PWD, HOST, PORT } = process.env;
 
 const app = express();
 app.use('/avatars', express.static(path.join(__dirname, 'public', 'avatars')));
@@ -27,10 +25,24 @@ app.use(express.json());
 
 const MONGO_URI = `mongodb+srv://${USER}:${PWD}@${HOST}/grouphub?retryWrites=true`;
 
+// Connect to MongoDB
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((err) => {
+    console.error('MongoDB Connection Error:', err);
+  });
+
 const server = app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
 });
 
+// Initialize Socket.IO
 const io = SocketIO(server, {
   cors: {
     origin: '*',
@@ -42,34 +54,14 @@ io.on('connection', (socket) => {
   if (socket.handshake.query?.room && socket.handshake.query.room !== 'notset') {
     socket.join(socket.handshake.query.room);
   }
-
-  const groupRouter = groupRoutes(io);
-  const taskListRouter = taskListRoutes(io);
-  const tasksRouter = taskRoutes(io);
-  const shoppingItemRouter = shoppingItemRoutes(io);
-  const shoppingRouter = shoppingListRoutes(io);
-  const eventRouter = eventRoutes(io);
-  app.use('/api/group', isAuth, groupRouter);
-  app.use('/api/tasklist', isAuth, taskListRouter);
-  app.use('/api/shoppinglist', isAuth, shoppingRouter);
-  app.use('/api/task', isAuth, tasksRouter);
-  app.use('/api/shoppingitem', isAuth, shoppingItemRouter);
-  app.use('/api/eventitem', isAuth, eventRouter);
-
-  socket.on('error', (err) => {
-    console.log(err);
-  });
 });
 
+// Define routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', isAuth, userRoutes);
-
-mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch((err) => console.log(err));
+app.use('/api/group', isAuth, groupRoutes(io));
+app.use('/api/tasklist', isAuth, taskListRoutes(io));
+app.use('/api/shoppinglist', isAuth, shoppingListRoutes(io));
+app.use('/api/task', isAuth, taskRoutes(io));
+app.use('/api/shoppingitem', isAuth, shoppingItemRoutes(io));
+app.use('/api/eventitem', isAuth, eventRoutes(io));
