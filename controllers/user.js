@@ -53,9 +53,7 @@ exports.updateAvatar = (req, res) => {
       user.avatar = `/avatars/${filename}`;
       await user.save();
 
-      const {
-        _id, email, defaultGroupId, displayName,
-      } = user;
+      const { _id, email, defaultGroupId, displayName } = user;
 
       return res.status(200).json({
         _id,
@@ -107,9 +105,7 @@ exports.updateDefaultGroup = async (req, res) => {
     }
 
     user.defaultGroupId = newDefaultGroup;
-    const {
-      _id, email, defaultGroupId, displayName, avatar,
-    } = await user.save();
+    const { _id, email, defaultGroupId, displayName, avatar } = await user.save();
 
     return res.status(200).json({
       _id,
@@ -142,9 +138,7 @@ exports.updateDisplayName = async (req, res) => {
     }
     user.displayName = newDisplayName;
     const result = await user.save();
-    const {
-      _id, email, defaultGroupId, displayName, avatar,
-    } = result;
+    const { _id, email, defaultGroupId, displayName, avatar } = result;
     return res.status(200).json({
       _id,
       email,
@@ -199,9 +193,7 @@ exports.getUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const {
-      _id, email, defaultGroupId, displayName, avatar,
-    } = user;
+    const { _id, email, defaultGroupId, displayName, avatar } = user;
     return res.status(200).json({
       _id,
       email,
