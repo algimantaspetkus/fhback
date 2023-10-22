@@ -22,7 +22,6 @@ const upload = multer({ storage });
 
 exports.updateAvatar = (req, res) => {
   const uploadMiddleware = upload.single('avatar');
-
   uploadMiddleware(req, res, async (err) => {
     // Wrap the callback in 'async'
     if (err instanceof multer.MulterError) {
@@ -42,14 +41,17 @@ exports.updateAvatar = (req, res) => {
       }
 
       const oldAvatar = user.avatar;
-      const filePath = `public${oldAvatar}`;
-      fs.unlink(filePath, (error) => {
-        if (error) {
-          console.error('Error deleting the file:', err);
-        } else {
-          console.log(`${filePath} deleted}`);
-        }
-      });
+      if (oldAvatar !== '/avatars/default.png') {
+        const filePath = `public${oldAvatar}`;
+        fs.unlink(filePath, (error) => {
+          if (error) {
+            console.error('Error deleting the file:', err);
+          } else {
+            console.log(`${filePath} deleted}`);
+          }
+        });
+      }
+
       user.avatar = `/avatars/${filename}`;
       await user.save();
 
@@ -60,7 +62,7 @@ exports.updateAvatar = (req, res) => {
         email,
         displayName,
         defaultGroupId,
-        avatar: filename,
+        avatar: `/avatars/${filename}`,
       });
     } catch (e) {
       return res.status(500).json({ error: 'Internal server error' });
@@ -124,13 +126,40 @@ exports.updateDisplayName = async (req, res) => {
   const { displayName: newDisplayName } = body;
 
   const schema = joi.object({
-    displayName: joi.string().min(3).required(),
+    displayName: joi
+      .string()
+      .min(3)
+      .max(32)
+      .regex(/^[a-zA-Z0-9]+( [a-zA-Z0-9]+)*$/)
+      .required()
+      .error((errors) => {
+        return new Error(
+          errors
+            .map((error) => {
+              switch (error.code) {
+                case 'string.min':
+                  return 'Display name must be at least 3 characters long';
+                case 'string.max':
+                  return 'Display name must be at most 32 characters long';
+                case 'string.pattern.base':
+                  return 'Display name must contain only alphanumeric characters with one space between words';
+                case 'any.required':
+                  return 'Display name is required';
+                default:
+                  return 'Invalid value for display name';
+              }
+            })
+            .join('. '),
+        ); // Join multiple errors with a period and space
+      }),
   });
+
   const { error } = schema.validate(body);
 
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({ error: error.message });
   }
+
   try {
     const user = await User.findById(userId);
     if (!user) {
@@ -156,13 +185,39 @@ exports.changePassword = async (req, res) => {
   const { oldPassword, newPassword } = body;
 
   const schema = joi.object({
-    oldPassword: joi.string().min(6).required(),
-    newPassword: joi.string().min(6).required(),
+    oldPassword: joi.required(),
+    newPassword: joi
+      .string()
+      .min(8)
+      .max(128)
+      .required()
+      .regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z\d\s]).*$/)
+      .error((errors) => {
+        return new Error(
+          errors
+            .map((error) => {
+              switch (error.code) {
+                case 'string.min':
+                  return 'New password must be at least 8 characters long';
+                case 'string.max':
+                  return 'New password must be at most 128 characters long';
+                case 'string.pattern.base':
+                  return 'New password must require at least one digit, one uppercase character, one lowercase character, and one special character';
+                case 'any.required':
+                  return 'New password is required';
+                default:
+                  return 'Invalid value for new password';
+              }
+            })
+            .join('. '),
+        ); // Join multiple errors with a period and space
+      }),
   });
+
   const { error } = schema.validate(body);
 
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({ error: error.message });
   }
 
   try {

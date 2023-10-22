@@ -10,13 +10,49 @@ const signup = async (req, res) => {
   const { body } = req;
   const schema = joi.object({
     email: joi.string().email().required(),
-    password: joi.string().min(6).required(),
-    displayName: joi.string().min(3).required(),
+    displayName: joi
+      .string()
+      .min(3)
+      .required()
+      .error((errors) => {
+        return new Error(
+          errors.map((error) => {
+            switch (error.code) {
+              case 'string.min':
+                return 'Display name must be at least 3 characters long';
+            }
+          }),
+        ); // Join multiple errors with a period and space
+      }),
+    password: joi
+      .string()
+      .min(8)
+      .max(128)
+      .required()
+      .regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z\d\s]).*$/)
+      .error((errors) => {
+        return new Error(
+          errors.map((error) => {
+            switch (error.code) {
+              case 'string.min':
+                return 'Password must be at least 8 characters long';
+              case 'string.max':
+                return 'Password must be at most 128 characters long';
+              case 'string.pattern.base':
+                return 'Password must require at least one digit, one uppercase character, one lowercase character, and one special character';
+              case 'any.required':
+                return 'Password is required';
+              default:
+                return 'Invalid value for password';
+            }
+          }),
+        ); // Join multiple errors with a period and space
+      }),
   });
 
   const { error } = schema.validate(body);
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({ error: error.message });
   }
   try {
     const user = await User.findOne({ email: body.email });

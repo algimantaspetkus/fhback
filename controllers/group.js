@@ -63,13 +63,28 @@ const createItem = async (req, res, io) => {
   const { userId } = req;
   const { body } = req;
   const schema = joi.object({
-    name: joi.string().min(6).required(),
+    name: joi
+      .string()
+      .min(5)
+      .required()
+      .error((errors) => {
+        return new Error(
+          errors.map((error) => {
+            switch (error.code) {
+              case 'string.min':
+                return 'Group name must be at least 5 characters long';
+              default:
+                return 'Invalid value for group name';
+            }
+          }),
+        );
+      }),
   });
 
   const { error } = schema.validate(body);
 
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({ error: error.message });
   }
 
   try {
@@ -88,7 +103,8 @@ const createItem = async (req, res, io) => {
 
     await newUserGroup.save();
     io.to(userId).emit('updateGroup');
-    return res.status(200).json({ groupId: _id });
+    // return res.status(200).json({ _id, createdAt, groupId: { name } });
+    return getGroups(req, res);
   } catch (err) {
     return res.status(500).json({ err: 'Internal server error' });
   }
